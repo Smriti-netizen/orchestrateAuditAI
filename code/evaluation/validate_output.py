@@ -35,6 +35,35 @@ OPERATIONS = {
     "VERIFY_RESTORE_BLOCKED": ("VERIFICATION", "BLOCKED"),
 }
 
+# A resource id prefix names its owning system.  The golden samples keep this
+# invariant with no exceptions, so a mismatch usually means a row was attributed
+# to the container it sat in rather than the system that owns the record.  It is
+# reported as a warning (not a failure) because only the hidden answers can prove
+# whether any exception is legitimate.
+PREFIX_SYSTEM = {
+    "account_": "account_service",
+    "search_": "search_service",
+    "analytics_": "analytics_platform",
+    "support_": "support_platform",
+    "export_": "export_service",
+    "backup_": "backup_service",
+    "data_flow_": "integration_service",
+    "audit_record_": "security_service",
+    "tombstone_": "identity_service",
+    "marketing_": "marketing_platform",
+    "legal_hold_": "legal_service",
+}
+
+
+def expected_system(resource_id):
+    """Owning system implied by a resource id prefix, or None when unmapped."""
+    rid = (resource_id or "").lower()
+    best = None
+    for prefix, sid in PREFIX_SYSTEM.items():
+        if rid.startswith(prefix) and (best is None or len(prefix) > len(best[0])):
+            best = (prefix, sid)
+    return best[1] if best else None
+
 
 def case_key(case_id):
     """Numeric order, matching dataset/deletion_requests.csv (case_33 < case_100)."""
@@ -47,6 +76,7 @@ def main(argv):
     out = Path(argv[1]) if len(argv) > 1 else root / "output.csv"
     req_path = root / "dataset" / "deletion_requests.csv"
     errors = []
+    warnings = []
 
     if not out.exists():
         print(f"FAIL  {out} does not exist")
@@ -102,7 +132,15 @@ def main(argv):
                 errors.append(f"{cid}: step {s['step_no']} {op} has {s['phase']}/{s['state']}")
             if not s["system_id"] or not s["resource_id"]:
                 errors.append(f"{cid}: step {s['step_no']} missing system/resource id")
+            exp = expected_system(s["resource_id"])
+            if exp and s["system_id"] != exp:
+                warnings.append(f"{cid}: step {s['step_no']} {s['resource_id']} owned by "
+                                f"{s['system_id']} but prefix implies {exp}")
 
+    if warnings:
+        print(f"WARN  {len(warnings)} prefix/system mismatch(es) in {out} (warning-only)")
+        for w in warnings[:30]:
+            print("  -", w)
     if errors:
         print(f"FAIL  {len(errors)} violation(s) in {out}")
         for e in errors[:30]:

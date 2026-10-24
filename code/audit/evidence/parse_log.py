@@ -2,7 +2,7 @@
 import json
 import re
 
-from .facts import ABSENT, PRESENT, Fact
+from .facts import ABSENT, PRESENT, Fact, presence_from_result, row_category, row_system
 
 _TS = re.compile(r"^(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}[Z]?)")
 _KV = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)=(?:\"([^\"]*)\"|'([^']*)'|(\S+))")
@@ -96,7 +96,9 @@ def _presence(fields):
     if rows is not None and str(rows).isdigit():
         return PRESENT if int(str(rows)) > 0 else ABSENT
     if result:
-        return PRESENT if str(result).lower() in ("hit", "found", "present", "ok", "true") else ABSENT
+        mapped = presence_from_result(result)
+        if mapped is not None:   # an unrecognised token falls through instead
+            return mapped        # of silently becoming ABSENT
     if available is not None:
         return PRESENT if str(available).lower() in ("true", "yes", "1") else ABSENT
     if download is not None:
@@ -121,7 +123,8 @@ def parse_log_file(path, file_id, captured_at):
             if not event:
                 continue
             resource_id = fields.get("resource_id") or ""
-            system_id = fields.get("service") or fields.get("source") or "unknown"
+            # A line's own ``system`` label outranks the emitting ``service``.
+            system_id = row_system(fields) or fields.get("source") or "unknown"
             presence = _presence(fields)
             idents = _collect_identifiers(fields)
             f = None
@@ -129,7 +132,7 @@ def parse_log_file(path, file_id, captured_at):
             # feed trace stitching below.
             if resource_id and not event.endswith("_started"):
                 from .facts import SYSTEM_CATEGORY
-                category = SYSTEM_CATEGORY.get(system_id, "UNKNOWN")
+                category = row_category(fields) or SYSTEM_CATEGORY.get(system_id, "UNKNOWN")
                 # A contact-cache lookup is a secondary identifier store, not an
                 # analytics profile or a retained conversation: policy requires
                 # deleting the row rather than anonymising/redacting it.

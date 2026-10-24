@@ -245,27 +245,27 @@ than a recorded answer.
 | Item | Value |
 | --- | --- |
 | Rows written | **518** (one per `case_id`, no duplicates, in the dataset's numeric `case_id` order: `case_33` before `case_100`) |
-| `COMPLETE` | 221 |
-| `INCOMPLETE` | 287 |
+| `COMPLETE` | 216 |
+| `INCOMPLETE` | 292 |
 | `NOT_APPLICABLE` | 10 (all with `steps_json = []`) |
-| Total steps | 2507 (avg 4.84 per case) |
+| Total steps | 2571 (avg 4.96 per case) |
 | Unresolved subjects | 0 |
 | Provenance-linked account rows | 342 (each a distinct account, 0 reused; 176 cases omitted) |
 | Batch-linked analytics rows | 54 (132 batches reported ambiguous) |
 | Structural validation | consecutive `step_no` from 1 ✓, phase order FINDING → REMEDIATION → VERIFICATION ✓, every step has exactly the seven contract fields ✓, case order matches `dataset/deletion_requests.csv` ✓ |
 
-Operation totals across the run: `REPORT_REMAINING_RECORD` 315, `REPORT_EXPOSED_PII` 149,
-`REPORT_ACTIVE_DATA_FLOW` 69, `REPORT_RESTORE_RISK` 11, `DELETE_RECORD` 315,
-`REDACT_RECORD` 92, `ANONYMIZE_RECORD` 57, `DISABLE_DATA_FLOW` 69, `BLOCK_RESTORE` 11,
-`VERIFY_RECORD_ABSENT` 771, `VERIFY_RECORD_PRESENT` 253, `VERIFY_RECORD_REDACTED` 146,
-`VERIFY_RECORD_ANONYMIZED` 96, `VERIFY_DATA_FLOW_DISABLED` 106,
-`VERIFY_RESTORE_BLOCKED` 47. Every remediation operation has a matching verification
+Operation totals across the run: `REPORT_REMAINING_RECORD` 314, `REPORT_EXPOSED_PII` 162,
+`REPORT_ACTIVE_DATA_FLOW` 69, `REPORT_RESTORE_RISK` 11, `DELETE_RECORD` 314,
+`REDACT_RECORD` 99, `ANONYMIZE_RECORD` 63, `DISABLE_DATA_FLOW` 69, `BLOCK_RESTORE` 11,
+`VERIFY_RECORD_ABSENT` 754, `VERIFY_RECORD_PRESENT` 294, `VERIFY_RECORD_REDACTED` 154,
+`VERIFY_RECORD_ANONYMIZED` 103, `VERIFY_DATA_FLOW_DISABLED` 104,
+`VERIFY_RESTORE_BLOCKED` 50. Every remediation operation has a matching verification
 operation with at least the same count, which is the internal consistency invariant the
 planner guarantees.
 
 The artefact is reproducible from the shipped archive: `code.zip` unpacked into an empty
 directory, `dataset/` copied in beside it, and a `--no-llm` run produces a byte-identical
-`output.csv` (sha256 `fa9c1390…`).
+`output.csv` (sha256 `75a34bd0…`).
 
 ---
 
@@ -368,7 +368,11 @@ replaced the guess.
     `VERIFY_RECORD_ABSENT`. *Fix:* `_record_exists()` = `PRESENT` **or** `anonymized` **or**
     `redacted`, applied in both the service-export and record parsers. 262 ABSENT facts carry
     `record_exists=True`; 10 of them matter. Full run: 10 `INCOMPLETE → COMPLETE` flips, −28
-    steps, samples unchanged.
+    steps, samples unchanged. *Post-entry-27 note:* with the per-row labels fix in place the
+    two rules now produce identical full-run status counts (`216/292/10`) and total steps
+    (`2571`) and differ only in the retained rows' reported operation in 12 cases, so the
+    full-run flips measured here were tied to the mis-labelled rows entry 27 fixed; the
+    sample regression above (18/32 vs 19/32 exact) is the durable difference.
 20. **Absence from a stale snapshot accepted as current absence.** A `PRESENT` fact from an
     older export can be contradicted by a later snapshot of *the same* collection. *Fix:*
     `_superseded()` — same system + collection + topology, `fact.captured_at < snap.captured_at
@@ -434,10 +438,46 @@ replaced the guess.
     log export is a container, not an observation), and requiring an admissible
     identifier-bearing linking fact costs 9 (155/193). The adopted rule leaves the samples
     untouched (19/32, 164/193, 1031/1158), removes 22 steps from 16 full-run cases with 0
-    status flips, and drops full-run steps 2529 → 2507. The one residual asymmetry is
+    status flips. The one residual asymmetry is
     `case_231`, whose account id is learned from a post-cut-off log line while the cited 404
     proof is admissible; C4 bounds the consequence to a missing verification step and no
     status change.
+27. **Per-row labels ignored, and `"FOUND"` read as absence.** A read-only audit of the
+    full run showed a resource attributed to the wrong system: `evidence_36`
+    (`customer_export_manifest_20260409.json`) is a flat manifest whose rows carry their
+    own `"system":"security_service"`, `"record_type":"SECURITY_AUDIT_LOG"`,
+    `"result":"FOUND"`, but our `Fact` for `audit_record_989` was
+    `export_service / UNKNOWN / ABSENT`. Root cause, two defects in the same code path:
+    the flat-manifest branch of `parse_json` took the *container* labels (the file-level
+    `origin` as the system and the file-level `collection` as the category) and ignored
+    each row's own `system` / `record_type`; and `_from_record` set `presence` to `PRESENT`
+    only when `result == "hit"`, so `FOUND` (and `MATCH`, `PRESENT`, `OK`, `TRUE`) became
+    `ABSENT`. `parse_log` shared the second half of the defect (it preferred the emitting
+    `service` over the row's `system`, and its present-set omitted `"match"`). Consequence
+    in the graded artefact: every `audit_record_*` row in a container that was not
+    `security_service` was mis-owned and mis-stated. *Fix:* one shared label layer in
+    `audit/evidence/facts.py` (`row_system`, `row_category` over a `RECORD_TYPE_CATEGORY`
+    map, `presence_from_result` over explicit `PRESENT_RESULTS` / `ABSENT_RESULTS` sets),
+    and every parser (`parse_json` flat manifests, snapshot bundles and `service_exports`,
+    `parse_sql` incl. `record_json` rows, `parse_log`) now lets a row's own system /
+    record_type win over its container, with the container only as fallback; an
+    unrecognised `result` token is reported and left at the parser default instead of being
+    silently downgraded to `ABSENT` (observed: `identifiable` 24, `active` 16, `anonymized`
+    9, `blocked` 4, `disabled` 4, `redacted` 4). *Measured effect.* Samples unchanged —
+    32/32, 19/32, 21/32, 164/193, 1031/1158 (no regression). Full run: resource-id-prefix ↔
+    `system_id` mismatches **91 → 0**, `COMPLETE` 221 → 216, `INCOMPLETE` 287 → 292, steps
+    2507 → 2571. `case_383`–`case_392` change from e.g. `export_service audit_record_989
+    VERIFY_RECORD_ABSENT` to `security_service audit_record_989 VERIFY_RECORD_PRESENT`
+    (`evidence_36`), statuses unchanged (`COMPLETE`). The existence rule was re-tested after
+    the fix: the literal `PRESENT`-only variant now scores 18/32, 19/32, 158/193, 1007/1158
+    — strictly worse than `_record_exists()` (present, or retained anonymised/redacted), so
+    the earlier rejection of `PRESENT`-only was **not** caused by this bug and the existing
+    rule is kept. On the 518 the two rules now agree on both the status counts (216/292/10)
+    and the total step count (2571): they differ only in the operation a retained
+    anonymised/redacted row is reported with (`VERIFY_RECORD_ANONYMIZED` /
+    `VERIFY_RECORD_REDACTED` vs a spurious `VERIFY_RECORD_ABSENT`), in **12** cases.
+    `validate_output.py` gained the prefix-vs-`system_id` invariant as a warning-only check
+    (gold has 0 exceptions; the artefact now has 0).
 
 ### Known limitations (deliberate, contract-driven)
 

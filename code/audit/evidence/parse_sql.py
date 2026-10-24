@@ -2,7 +2,7 @@
 import re
 import sqlite3
 
-from .facts import ABSENT, PRESENT, Fact
+from .facts import ABSENT, PRESENT, Fact, row_category, row_system
 
 
 def parse_sql_file(path, file_id, captured_at):
@@ -78,12 +78,15 @@ def _row_to_fact(table, rec, file_id, captured_at, system_hint=None, collection=
         merged.update({k: v for k, v in rec.items() if v is not None})
         rec = merged
     resource_id = _pick(rec, ["resource_id", "doc_id", "archive_key", "object_key"]) or ""
-    system_id = system_hint or _infer_system(table)
+    # A row's own system / record_type (an ``origin_system`` column, or a
+    # ``system`` field inside ``record_json``) outranks the table-name guess.
+    system_id = row_system(rec) or system_hint or _infer_system(table)
     if system_hint:
         from .facts import SYSTEM_CATEGORY
-        category = SYSTEM_CATEGORY.get(system_hint) or _infer_category(collection or table)
+        category = (row_category(rec) or SYSTEM_CATEGORY.get(system_hint)
+                    or _infer_category(collection or table))
     else:
-        category = _infer_category(collection or table)
+        category = row_category(rec) or _infer_category(collection or table)
     topology = _infer_topology(table)
 
     user_ref = _pick(rec, ["customer_reference", "user_id", "subject_reference", "subject_id", "customer"])

@@ -1,7 +1,7 @@
 """JSON evidence parser: snapshot bundles, service_exports maps, flat records manifests."""
 import json
 
-from .facts import ABSENT, PRESENT, Fact
+from .facts import ABSENT, PRESENT, Fact, presence_from_result, row_category, row_system
 
 
 def parse_json_file(path, file_id, captured_at):
@@ -65,8 +65,9 @@ def parse_json_file(path, file_id, captured_at):
 
 def _from_service_export(service, gk, rec, file_id, captured_at):
     resource_id = str(rec.get("resource_id") or "")
-    system_id = service or "unknown"
-    category = _category_for_service(service, gk, rec)
+    # Row-level labels win; the export bundle's service key is only the fallback.
+    system_id = row_system(rec) or service or "unknown"
+    category = row_category(rec) or _category_for_service(service, gk, rec)
     extra = {}
     presence = PRESENT
     identifiers = {}
@@ -188,13 +189,17 @@ def _record_exists(presence, extra):
 
 def _from_record(data_store, collection, rec, file_id, captured_at):
     resource_id = str(rec.get("resource_id") or "")
-    system_id = data_store or "unknown"
-    category = _category_from_collection(collection)
     # Search documents nest the identifying fields one level down.
     doc = rec.get("document") if isinstance(rec.get("document"), dict) else {}
     merged = dict(doc)
     merged.update({k: v for k, v in rec.items() if v is not None})
     rec = merged
+    # A row's own system / record_type outranks the container it sits in: a
+    # security-audit row inside a customer-export manifest is still a
+    # security-audit row.  The container labels (manifest origin, snapshot
+    # data_store, collection) are only the fallback.
+    system_id = row_system(rec) or data_store or "unknown"
+    category = row_category(rec) or _category_from_collection(collection)
     user_ref = rec.get("customer_reference") or rec.get("user_id") or rec.get("subject_reference") or rec.get("subject_selector")
     name = rec.get("full_name") or rec.get("display_name") or rec.get("requester_name") or rec.get("name")
     email = rec.get("email") or rec.get("owner_email") or rec.get("requester_email") or rec.get("customer_email") or rec.get("lookup_key") or rec.get("subject_email")
@@ -207,7 +212,9 @@ def _from_record(data_store, collection, rec, file_id, captured_at):
     if "status_code" in rec:
         presence = PRESENT if int(rec["status_code"]) == 200 else ABSENT
     if "result" in rec:
-        presence = PRESENT if str(rec.get("result")).lower() == "hit" else ABSENT
+        mapped = presence_from_result(rec.get("result"))
+        if mapped is not None:   # an unrecognised token is reported, never
+            presence = mapped    # silently downgraded to ABSENT
     if "rows" in rec:
         presence = PRESENT if int(rec.get("rows") or 0) > 0 else ABSENT
     if "available" in rec:

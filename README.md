@@ -150,10 +150,11 @@ Key invariants (each replaced a measured guess):
 * **`_record_exists` (not literal `PRESENT` only).** Existence means `presence == PRESENT`
   **or** the row is a retained anonymised/redacted form (`anonymized` / `redacted` flags).
   The literal rule `record_exists = (presence == PRESENT)` was measured and **rejected**:
-  it regressed the 32 samples to **18/32** exact, **156/193** positional (spurious second
-  `VERIFY_RECORD_ABSENT` on retained anonymised analytics). The principled helper keeps
-  samples identical and flips **10** full-run cases (`case_383`–`case_392`,
-  `INCOMPLETE` → `COMPLETE`, **−28** steps vs the pre-fix full run; **2507** steps now).
+  it regressed the 32 samples to **18/32** exact, **158/193** positional (it labels a
+  retained anonymised/redacted row `VERIFY_RECORD_ABSENT`). The principled helper keeps the
+  samples at **19/32** exact, **164/193** positional; on the full run both rules give the
+  same status counts (**216/292/10**, **2571** steps) and differ only in the operation/state
+  of the retained rows in **12** cases.
 * **Membership at `audit_at`.** A resource enters the plan only with an admissible fact or
   an in-window activity/provenance link. **158** `(case, resource)` pairs were tied only
   by post-`audit_at` snapshots and were removed (**−22** steps, **0** status flips).
@@ -188,7 +189,7 @@ Key invariants (each replaced a measured guess):
 | Ordering | Phase → operation rank → `system_id` → `resource_id` | Positional scoring on 32 samples |
 | Account | Ranked 1:1 resolver with 0.25 floor | **342/518** resolved, **0** reuse, **176** omitted |
 | Analytics | Structurally forced batches only | **54** links; ambiguous batches skipped |
-| `_record_exists` | PRESENT ∨ anonymized ∨ redacted | Rejected literal PRESENT-only: **18/32** exact, **156/193** positional |
+| `_record_exists` | PRESENT ∨ anonymized ∨ redacted | Rejected literal PRESENT-only: **18/32** exact, **158/193** positional |
 | Omission vs guess | Omit low-confidence provenance | LOO floor **0.25**; wrong guess cannot invent findings |
 | Packaging | `media_extractions/` outside `code/cache/` | Zip + `--no-llm` reproduces `output.csv` byte-identically |
 

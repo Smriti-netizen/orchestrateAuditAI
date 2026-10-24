@@ -17,7 +17,7 @@
 2. **Account provenance resolver** — 342/518 cases get a distinct account row (0 reused); 0.25 LOO floor; 176 omitted.
 3. **Provenance attaches only ABSENT account facts** — guesses may prove absence, never a remaining-record finding; 0 status flips from wrong-account 404 reuse.
 4. **Analytics batch rule (structural k≥2 only)** — 2/2 sample pairs; 54/518 batch links; 132 ambiguous batches skipped.
-5. **`_record_exists` = PRESENT ∨ anonymized ∨ redacted** — rejected literal PRESENT-only (18/32 exact, 156/193 positional); 10 full-run COMPLETE flips case_383–392.
+5. **`_record_exists` = PRESENT ∨ anonymized ∨ redacted** — rejected literal PRESENT-only (18/32 exact, 158/193 positional); same 518 status counts (216/292/10), 12 cases differ only in step content.
 6. **Post-`audit_at` membership leak fix** — 158 pairs removed; −22 steps; samples stay 19/32 exact, 164/193 positional.
 7. **`_superseded()` guard** — 0 pairs on 518 (1113 late snapshots all after audit_at); kept for synthetic C4 fixture.
 8. **Replica drift = finding** — present in any topology counts as present; not collapsed away.
@@ -27,7 +27,7 @@
 ## Six rejected ideas (with numbers)
 
 1. **Batch-order / anchor account mapping** — precision 0.25–1.00 on 2–11 picks.
-2. **`record_exists = (presence == PRESENT)` only** — 18/32 exact, 156/193 positional regression.
+2. **`record_exists = (presence == PRESENT)` only** — 18/32 exact, 158/193 positional regression.
 3. **Per-stream “newest row” evidence selection** — broke case_09 citation (evidence_93 → evidence_06); reverted.
 4. **CHECK_RESTORE_ACCESS claims override evidence** — 4/123 linked resources contradict facts.
 5. **Stricter post-audit membership (file-time logs / identifier-only links)** — −3 or −9 positional matches on samples.

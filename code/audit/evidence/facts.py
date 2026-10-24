@@ -1,10 +1,97 @@
 """Normalised Fact model and the in-memory fact index (M1 milestone)."""
+from collections import Counter
 from dataclasses import dataclass, field
 
 PRESENT = "PRESENT"
 ABSENT = "ABSENT"
 
 VALID_PRESENCE = (PRESENT, ABSENT)
+
+# ---------------------------------------------------------------------------
+# Presence from a row's own ``result`` token
+# ---------------------------------------------------------------------------
+# Two explicit, case-insensitive sets shared by every parser that reads a
+# ``result`` field.  Anything outside them is *not* an absence: the row was
+# observed, so it keeps the parser's default (present) rather than being
+# silently rewritten to ABSENT.
+PRESENT_RESULTS = frozenset({"found", "hit", "present", "ok", "true", "match"})
+ABSENT_RESULTS = frozenset({"not_found", "miss", "absent", "none", "false"})
+
+# Unrecognised ``result`` values seen while parsing, with counts.  Reported so a
+# new result shape cannot hide behind the default.
+UNKNOWN_RESULT_VALUES = Counter()
+
+
+def presence_from_result(value):
+    """PRESENT / ABSENT for a ``result`` token, or None when unrecognised."""
+    if value is None:
+        return None
+    v = str(value).strip().lower()
+    if v in PRESENT_RESULTS:
+        return PRESENT
+    if v in ABSENT_RESULTS:
+        return ABSENT
+    if v:
+        UNKNOWN_RESULT_VALUES[v] += 1
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Row-level system / record-type labels
+# ---------------------------------------------------------------------------
+# A row may name its own owner system and record type.  Those claims win over
+# the container the row sits in (a manifest ``origin``, a snapshot
+# ``data_store``, an export bundle's service key, a log line's emitting
+# ``service``): a security-audit row inside a customer-export manifest is still
+# a security-audit row.  The container is only the fallback.
+ROW_SYSTEM_KEYS = ("system", "origin_system", "service", "source_system")
+ROW_CATEGORY_KEYS = ("record_type", "record_category")
+
+_NULL_LABELS = frozenset({"", "none", "null", "unknown", "n/a", "na", "-"})
+
+# record_type -> policy category.  Every value the evidence uses is listed, so a
+# row's own type token is never re-guessed from its container.
+RECORD_TYPE_CATEGORY = {
+    "USER_PROFILE": "USER_PROFILE",
+    "ACCOUNT_TOMBSTONE": "ACCOUNT_TOMBSTONE",
+    "SEARCH_INDEX_ENTRY": "SEARCH_INDEX_ENTRY",
+    "ANALYTICS_PROFILE": "ANALYTICS_PROFILE",
+    "PRODUCT_TELEMETRY": "PRODUCT_TELEMETRY",
+    "SUPPORT_MESSAGE": "SUPPORT_MESSAGE",
+    "SUPPORT_ATTACHMENT": "SUPPORT_ATTACHMENT",
+    "CACHE_ENTRY": "CACHE_ENTRY",
+    "USER_EXPORT": "USER_EXPORT",
+    "BACKUP_ARCHIVE": "BACKUP_ARCHIVE",
+    "DATA_FLOW": "DATA_FLOW",
+    "SECURITY_AUDIT_LOG": "SECURITY_AUDIT_LOG",
+    "LEGAL_HOLD_RECORD": "LEGAL_HOLD_RECORD",
+    "MARKETING_PROFILE": "MARKETING_PROFILE",
+    "EMAIL_DELIVERY_LOG": "EMAIL_DELIVERY_LOG",
+    "SECONDARY_IDENTIFIER": "SECONDARY_IDENTIFIER",
+    "FINANCE_RECORD": "FINANCE_RECORD",
+    "ORDER_RECORD": "ORDER_RECORD",
+}
+
+
+def row_system(rec):
+    """The system a row claims for itself, or '' when it claims none."""
+    for key in ROW_SYSTEM_KEYS:
+        value = rec.get(key)
+        if value is not None and str(value).strip().lower() not in _NULL_LABELS:
+            return str(value).strip()
+    return ""
+
+
+def row_category(rec):
+    """The policy category a row claims for itself, or '' when it claims none."""
+    for key in ROW_CATEGORY_KEYS:
+        value = rec.get(key)
+        if value is None:
+            continue
+        name = str(value).strip().upper()
+        if name in RECORD_TYPE_CATEGORY:
+            return RECORD_TYPE_CATEGORY[name]
+    return ""
 
 
 @dataclass
