@@ -1,0 +1,90 @@
+{
+  "file_id": "evidence_37",
+  "path": "C:\\Users\\smrit\\OneDrive\\deleteAuditAgent\\hackerrank-orchestrate-october26\\dataset\\evidence\\images\\security_audit_explorer_20260905.png",
+  "captured_at": "2026-09-05T07:00:00Z",
+  "sha256": "ca59f693f4e7002466b3fdeaf1bb6763618770963dd811b60003772d07b4b03b",
+  "extracted": {
+    "screen": "Account events list for user_03 in Sentinel",
+    "subject": {
+      "user_id": "user_03",
+      "emails": [],
+      "phones": [],
+      "resource_ids": []
+    },
+    "topology": "n/a",
+    "rows": [
+      {
+        "system": "Account",
+        "resource_id": "audit_record_003",
+        "category": "SECURITY_AUDIT_LOG",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "user_03",
+          "emails": [],
+          "phones": []
+        },
+        "details": "Account closure recorded, Automated workflow, Valid, 25 Aug 04:03"
+      },
+      {
+        "system": "Account",
+        "resource_id": "audit_record_002",
+        "category": "SECURITY_AUDIT_LOG",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "user_03",
+          "emails": [],
+          "phones": []
+        },
+        "details": "Session revoked, Security system, Valid, 25 Aug 03:21"
+      },
+      {
+        "system": "Account",
+        "resource_id": "audit_record_001",
+        "category": "SECURITY_AUDIT_LOG",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "user_03",
+          "emails": [],
+          "phones": []
+        },
+        "details": "Recovery challenge completed, User (self), Valid, 24 Aug 16:14"
+      },
+      {
+        "system": "Account",
+        "resource_id": "audit_record_006",
+        "category": "SECURITY_AUDIT_LOG",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "user_03",
+          "emails": [],
+          "phones": []
+        },
+        "details": "Email change confirmed, User (self), Valid, 22 Aug 11:27"
+      },
+      {
+        "system": "Account",
+        "resource_id": "audit_record_005",
+        "category": "SECURITY_AUDIT_LOG",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "user_03",
+          "emails": [],
+          "phones": []
+        },
+        "details": "Login from new device, User (self), Valid, 20 Aug 09:42"
+      },
+      {
+        "system": "Account",
+        "resource_id": "audit_record_004",
+        "category": "SECURITY_AUDIT_LOG",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "user_03",
+          "emails": [],
+          "phones": []
+        },
+        "details": "Password changed, User (self), Valid, 18 Aug 14:05"
+      }
+    ]
+  }
+}

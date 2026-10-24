@@ -1,0 +1,116 @@
+{
+  "file_id": "evidence_46",
+  "path": "C:\\Users\\smrit\\OneDrive\\deleteAuditAgent\\hackerrank-orchestrate-october26\\dataset\\evidence\\images\\object_storage_browser_20260213.png",
+  "captured_at": "2026-02-13T08:00:00Z",
+  "sha256": "96e9a191380c29b9e0ab997007268c4cd6353cb6721ebd1ed4a32599d8d37e04",
+  "extracted": {
+    "screen": "Nimbus Object Storage bucket details for northstar-customer-data",
+    "subject": {
+      "user_id": "",
+      "emails": [],
+      "phones": [],
+      "resource_ids": [
+        "northstar-customer-data"
+      ]
+    },
+    "topology": "n/a",
+    "rows": [
+      {
+        "system": "Backup",
+        "resource_id": "delivery_confirmation_19.pdf",
+        "category": "BACKUP_ARCHIVE",
+        "state": "PRESENT",
+        "identifiers": {
+          "user_id": "",
+          "emails": [],
+          "phones": []
+        },
+        "details": "684 KB, v3, Standard, Modified 12 Feb 18:42"
+      },
+      {
+        "system": "Backup",
+        "resource_id": "delivery_confirmation_20.pdf",
+        "category": "BACKUP_ARCHIVE",
+        "state": "PRESENT",
+        "identifiers": {
+          "user_id": "",
+          "emails": [],
+          "phones": []
+        },
+        "details": "712 KB, v1, Standard, Modified 11 Feb 14:17"
+      },
+      {
+        "system": "Backup",
+        "resource_id": "return_label_4821.pdf",
+        "category": "BACKUP_ARCHIVE",
+        "state": "PRESENT",
+        "identifiers": {
+          "user_id": "",
+          "emails": [],
+          "phones": []
+        },
+        "details": "203 KB, v1, Standard, Modified 10 Feb 09:33"
+      },
+      {
+        "system": "Backup",
+        "resource_id": "return_label_4876.pdf",
+        "category": "BACKUP_ARCHIVE",
+        "state": "PRESENT",
+        "identifiers": {
+          "user_id": "",
+          "emails": [],
+          "phones": []
+        },
+        "details": "198 KB, v2, Standard, Modified 11 Feb 16:05"
+      },
+      {
+        "system": "Backup",
+        "resource_id": "invoice_NS-10493.pdf",
+        "category": "BACKUP_ARCHIVE",
+        "state": "PRESENT",
+        "identifiers": {
+          "user_id": "",
+          "emails": [],
+          "phones": []
+        },
+        "details": "318 KB, v1, Standard, Modified 10 Feb 11:21"
+      },
+      {
+        "system": "Backup",
+        "resource_id": "parcel_damage_7713.jpg",
+        "category": "BACKUP_ARCHIVE",
+        "state": "PRESENT",
+        "identifiers": {
+          "user_id": "",
+          "emails": [],
+          "phones": []
+        },
+        "details": "2.4 MB, v1, Standard, Modified 12 Feb 10:08"
+      },
+      {
+        "system": "Backup",
+        "resource_id": "customer_export_2026-02-10.zip",
+        "category": "BACKUP_ARCHIVE",
+        "state": "PRESENT",
+        "identifiers": {
+          "user_id": "",
+          "emails": [],
+          "phones": []
+        },
+        "details": "128 MB, v1, Standard, Modified 10 Feb 23:14"
+      },
+      {
+        "system": "Backup",
+        "resource_id": "customer_export_2026-02-12.zip",
+        "category": "BACKUP_ARCHIVE",
+        "state": "PRESENT",
+        "identifiers": {
+          "user_id": "",
+          "emails": [],
+          "phones": []
+        },
+        "details": "131 MB, v1, Standard, Modified 12 Feb 21:56"
+      }
+    ]
+  }
+}

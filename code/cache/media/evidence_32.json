@@ -1,0 +1,84 @@
+{
+  "file_id": "evidence_32",
+  "path": "C:\\Users\\smrit\\OneDrive\\deleteAuditAgent\\hackerrank-orchestrate-october26\\dataset\\evidence\\images\\backup_restore_console_20260429.png",
+  "captured_at": "2026-04-29T09:00:00Z",
+  "sha256": "2c246aa5843bec609b9ddfdf1154cd81e0fd61996f83954735e9856e48c18bf3",
+  "extracted": {
+    "screen": "Vault Recovery Manager - Customer-platform archives list",
+    "subject": {
+      "user_id": "",
+      "emails": [
+        "bluepeako@outlook.com",
+        "miller.logistics@company.co",
+        "areed1433@gmail.com",
+        "summit-retail@company.co"
+      ],
+      "phones": [],
+      "resource_ids": [
+        "backup_9291",
+        "backup_9288",
+        "backup_9287",
+        "backup_9286"
+      ]
+    },
+    "topology": "primary",
+    "rows": [
+      {
+        "system": "Backup",
+        "resource_id": "backup_9291",
+        "category": "BACKUP_ARCHIVE",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "",
+          "emails": [
+            "bluepeako@outlook.com"
+          ],
+          "phones": []
+        },
+        "details": "Region: ap-southeast-1, Created: 26 Apr 02:00, Size: 102.3 GB, Encryption: AES-256, Tier: Archive"
+      },
+      {
+        "system": "Backup",
+        "resource_id": "backup_9288",
+        "category": "BACKUP_ARCHIVE",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "",
+          "emails": [
+            "miller.logistics@company.co"
+          ],
+          "phones": []
+        },
+        "details": "Region: us-west-2, Created: 26 Apr 02:00, Size: 67.1 GB, Encryption: AES-256, Tier: Archive"
+      },
+      {
+        "system": "Backup",
+        "resource_id": "backup_9287",
+        "category": "BACKUP_ARCHIVE",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "",
+          "emails": [
+            "areed1433@gmail.com"
+          ],
+          "phones": []
+        },
+        "details": "Region: eu-west-1, Created: 26 Apr 02:00, Size: 84.7 GB, Encryption: AES-256, Tier: Archive, Checksum: Verified, Path: s3://northstar-backups/customer-platform/weekly/segment-42-20260426.tar.zst"
+      },
+      {
+        "system": "Backup",
+        "resource_id": "backup_9286",
+        "category": "BACKUP_ARCHIVE",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "",
+          "emails": [
+            "summit-retail@company.co"
+          ],
+          "phones": []
+        },
+        "details": "Region: us-east-1, Created: 26 Apr 02:00, Size: 91.4 GB, Encryption: AES-256, Tier: Archive"
+      }
+    ]
+  }
+}

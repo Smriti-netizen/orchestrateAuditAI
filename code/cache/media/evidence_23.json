@@ -1,0 +1,78 @@
+{
+  "file_id": "evidence_23",
+  "path": "C:\\Users\\smrit\\OneDrive\\deleteAuditAgent\\hackerrank-orchestrate-october26\\dataset\\evidence\\images\\customer_export_console_20260618.png",
+  "captured_at": "2026-06-18T12:00:00Z",
+  "sha256": "18b95c1bd8b8956e40216df935498a9f3c181ea2a69b5cd6d3c0841a816d5557",
+  "extracted": {
+    "screen": "Data exports list and detail view",
+    "subject": {
+      "user_id": "",
+      "emails": [
+        "ingrid.dahl@outlook.com"
+      ],
+      "phones": [],
+      "resource_ids": [
+        "export_1260"
+      ]
+    },
+    "topology": "primary",
+    "rows": [
+      {
+        "system": "Export",
+        "resource_id": "export_1261",
+        "category": "USER_EXPORT",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "",
+          "emails": [
+            "marcus.lee@northstar.shop"
+          ],
+          "phones": []
+        },
+        "details": "Status: Collecting, Created: 20 Jun 14:18 UTC"
+      },
+      {
+        "system": "Export",
+        "resource_id": "export_1260",
+        "category": "USER_EXPORT",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "",
+          "emails": [
+            "ingrid.dahl@outlook.com"
+          ],
+          "phones": []
+        },
+        "details": "Status: Ready, Created: 18 Jun 06:42 UTC, Expires: 25 Jun 2026 06:42 UTC, Size: 18.4 MB, Checksum: SHA-256 - 41ca09..., Download count: 0, Included: Profile, Orders, Saved addresses"
+      },
+      {
+        "system": "Export",
+        "resource_id": "export_1259",
+        "category": "USER_EXPORT",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "",
+          "emails": [
+            "sara.kim@northstar.shop"
+          ],
+          "phones": []
+        },
+        "details": "Status: Packaging, Created: 17 Jun 11:03 UTC"
+      },
+      {
+        "system": "Export",
+        "resource_id": "export_1258",
+        "category": "USER_EXPORT",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "",
+          "emails": [
+            "daniel.park@northstar.shop"
+          ],
+          "phones": []
+        },
+        "details": "Status: Ready, Created: 16 Jun 09:27 UTC"
+      }
+    ]
+  }
+}

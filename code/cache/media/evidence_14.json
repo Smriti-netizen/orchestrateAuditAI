@@ -1,0 +1,74 @@
+{
+  "file_id": "evidence_14",
+  "path": "C:\\Users\\smrit\\OneDrive\\deleteAuditAgent\\hackerrank-orchestrate-october26\\dataset\\evidence\\images\\connector_management_console_20260807.png",
+  "captured_at": "2026-08-07T08:00:00Z",
+  "sha256": "e81fabc93ea1b5f4c918d934cdb2bea05d61737adfcc29f281494f5d8ec46355",
+  "extracted": {
+    "screen": "BridgeOps Connections Topology view",
+    "subject": {
+      "user_id": "",
+      "emails": [
+        "jain.aditi@gmail.com"
+      ],
+      "phones": [],
+      "resource_ids": [
+        "data_flow_1121"
+      ]
+    },
+    "topology": "primary",
+    "rows": [
+      {
+        "system": "Integration",
+        "resource_id": "data_flow_1121",
+        "category": "DATA_FLOW",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "",
+          "emails": [
+            "jain.aditi@gmail.com"
+          ],
+          "phones": []
+        },
+        "details": "Status: Healthy, Owner: Data Platform, Destination: customer_analytics_warehouse, Mode: Continuous, Events/hour: 1,284, Last contact: 07:59:42"
+      },
+      {
+        "system": "Integration",
+        "resource_id": "data_flow_9846",
+        "category": "DATA_FLOW",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "",
+          "emails": [
+            "lucia-torres@gmail.com"
+          ],
+          "phones": []
+        },
+        "details": "Destination: customer_analytics_warehouse, Mode: Continuous, Events/hour: 842, Last contact: 07:58:36"
+      },
+      {
+        "system": "Integration",
+        "resource_id": "Order notifications",
+        "category": "DATA_FLOW",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "",
+          "emails": [],
+          "phones": []
+        },
+        "details": "Destination: notification_service, Mode: Continuous, Events/hour: 650, Last contact: 07:56:28"
+      },
+      {
+        "system": "Integration",
+        "resource_id": "Delivery tracking",
+        "category": "DATA_FLOW",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "",
+          "emails": [],
+          "phones": []
+        },
+        "details": "Destination: logistics_warehouse, Mode: Continuous, Events/hour: 420, Last contact: 07:55:13"
+      }
+    ]
+  }
+}

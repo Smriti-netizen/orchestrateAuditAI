@@ -1,0 +1,49 @@
+{
+  "file_id": "evidence_28",
+  "path": "C:\\Users\\smrit\\OneDrive\\deleteAuditAgent\\hackerrank-orchestrate-october26\\dataset\\evidence\\images\\support_ticket_console_20260524.png",
+  "captured_at": "2026-05-24T07:00:00Z",
+  "sha256": "542b7aec17e6b2f38827896e7eb52c70e4bfaaca22433621be1f80f54884e944",
+  "extracted": {
+    "screen": "Support ticket detail page for CS-5034",
+    "subject": {
+      "user_id": "",
+      "emails": [
+        "kagayeman8847@fastmail.com"
+      ],
+      "phones": [],
+      "resource_ids": [
+        "support_1034",
+        "ORD-20265034"
+      ]
+    },
+    "topology": "n/a",
+    "rows": [
+      {
+        "system": "Support",
+        "resource_id": "support_1034",
+        "category": "SUPPORT_MESSAGE",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "",
+          "emails": [
+            "kagayeman8847@fastmail.com"
+          ],
+          "phones": []
+        },
+        "details": "Normal priority, SLA 01:42, Assigned to Maya Chen, Updated moments ago, 4 records"
+      },
+      {
+        "system": "Orders",
+        "resource_id": "ORD-20265034",
+        "category": "ORDER_RECORD",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "",
+          "emails": [],
+          "phones": []
+        },
+        "details": "Product: Running shoes, Status: In transit, Carrier: SwiftShip, Tracking: SWF-884103, Expected: 26 May 2026, Assigned agent: Maya Chen"
+      }
+    ]
+  }
+}

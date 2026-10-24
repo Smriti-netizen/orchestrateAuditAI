@@ -1,0 +1,170 @@
+[
+  {
+    "context_window": 4096,
+    "id": "allam-2-7b",
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "pricing": {}
+  },
+  {
+    "context_window": 512,
+    "id": "meta-llama/llama-prompt-guard-2-22m",
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "pricing": {
+      "completion": "0.00000003",
+      "image": "0",
+      "input_cache_read": "0.000000015",
+      "prompt": "0.00000003",
+      "request": "0"
+    }
+  },
+  {
+    "context_window": 4000,
+    "id": "canopylabs/orpheus-arabic-saudi",
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "speech"
+    ],
+    "pricing": {
+      "image": "0",
+      "input_cache_read": "0.00002",
+      "prompt": "0.00004",
+      "request": "0"
+    }
+  },
+  {
+    "context_window": 131072,
+    "id": "qwen/qwen3.8-27b",
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "pricing": {
+      "completion": "0.000004",
+      "image": "0",
+      "input_cache_read": "0.0000004",
+      "prompt": "0.0000008",
+      "request": "0"
+    }
+  },
+  {
+    "context_window": 131072,
+    "id": "openai/gpt-oss-20b",
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "pricing": {
+      "completion": "0.0000003",
+      "image": "0",
+      "input_cache_read": "0.0000000375",
+      "prompt": "0.000000075",
+      "request": "0"
+    }
+  },
+  {
+    "context_window": 512,
+    "id": "meta-llama/llama-prompt-guard-2-86m",
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "pricing": {
+      "completion": "0.00000004",
+      "image": "0",
+      "input_cache_read": "0.00000002",
+      "prompt": "0.00000004",
+      "request": "0"
+    }
+  },
+  {
+    "context_window": 4000,
+    "id": "canopylabs/orpheus-v1-english",
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "speech"
+    ],
+    "pricing": {
+      "image": "0",
+      "input_cache_read": "0.000011",
+      "prompt": "0.000022",
+      "request": "0"
+    }
+  },
+  {
+    "context_window": 131072,
+    "id": "openai/gpt-oss-120b",
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "pricing": {
+      "completion": "0.0000006",
+      "image": "0",
+      "input_cache_read": "0.000000075",
+      "prompt": "0.00000015",
+      "request": "0"
+    }
+  },
+  {
+    "context_window": 448,
+    "id": "whisper-large-v3",
+    "input_modalities": [
+      "audio"
+    ],
+    "output_modalities": [
+      "transcription"
+    ],
+    "pricing": {}
+  },
+  {
+    "context_window": 131072,
+    "id": "openai/gpt-oss-safeguard-20b",
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "pricing": {
+      "completion": "0.0000003",
+      "image": "0",
+      "input_cache_read": "0.0000000375",
+      "prompt": "0.000000075",
+      "request": "0"
+    }
+  },
+  {
+    "context_window": 448,
+    "id": "whisper-large-v3-turbo",
+    "input_modalities": [
+      "audio"
+    ],
+    "output_modalities": [
+      "transcription"
+    ],
+    "pricing": {}
+  }
+]

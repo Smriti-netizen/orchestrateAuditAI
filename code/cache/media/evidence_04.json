@@ -1,0 +1,88 @@
+{
+  "file_id": "evidence_04",
+  "path": "C:\\Users\\smrit\\OneDrive\\deleteAuditAgent\\hackerrank-orchestrate-october26\\dataset\\evidence\\images\\account_admin_console_20260926.png",
+  "captured_at": "2026-09-26T11:00:00Z",
+  "sha256": "d5c32ca5b6e1a2b4bbe9f5d41835ef1fd5d4f7061dab9067a4f9f88cea3c1861",
+  "extracted": {
+    "screen": "Customer profile overview for Haruka Sato",
+    "subject": {
+      "user_id": "user_11",
+      "emails": [
+        "haruka.s1838@zoho.com"
+      ],
+      "phones": [
+        "+81 90 7610 2507"
+      ],
+      "resource_ids": [
+        "account_5762"
+      ]
+    },
+    "topology": "primary",
+    "rows": [
+      {
+        "system": "Account",
+        "resource_id": "account_5762",
+        "category": "USER_PROFILE",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "user_11",
+          "emails": [
+            "haruka.s1838@zoho.com"
+          ],
+          "phones": [
+            "+81 90 7610 2507"
+          ]
+        },
+        "details": "Silver tier, Member since 12 Jan 2024, Preferred language Japanese, Last contact 24 Sep 2026 09:14 JST"
+      },
+      {
+        "system": "Orders",
+        "resource_id": "ORD-20265762",
+        "category": "ORDER_RECORD",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "user_11",
+          "emails": [
+            "haruka.s1838@zoho.com"
+          ],
+          "phones": [
+            "+81 90 7610 2507"
+          ]
+        },
+        "details": "12 Sep 2026, Ceramic coffee set, Qty 1, JPY 8,900, Delivered"
+      },
+      {
+        "system": "Orders",
+        "resource_id": "ORD-20265518",
+        "category": "ORDER_RECORD",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "user_11",
+          "emails": [
+            "haruka.s1838@zoho.com"
+          ],
+          "phones": [
+            "+81 90 7610 2507"
+          ]
+        },
+        "details": "28 Aug 2026, Travel backpack, Qty 1, JPY 12,400, Returned"
+      },
+      {
+        "system": "Support",
+        "resource_id": "support_9538",
+        "category": "SUPPORT_MESSAGE",
+        "state": "ACTIVE",
+        "identifiers": {
+          "user_id": "user_11",
+          "emails": [
+            "haruka.s1838@zoho.com"
+          ],
+          "phones": [
+            "+81 90 7610 2507"
+          ]
+        },
+        "details": "CS-8538, Created 28 Aug, Customer replied, Support agent responded 22 Sep"
+      }
+    ]
+  }
+}

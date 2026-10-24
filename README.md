@@ -40,6 +40,139 @@ python3 code/main.py
 The blank template at `dataset/output.csv` is provided as a reference. Your final generated file for submission must be the root-level `output.csv`.
 
 
+## Solution (this submission)
+
+A deterministic deletion-audit agent in `code/` (Python 3, standard library only; the
+model is an optional, cached extractor, not part of the decision path).
+
+### Setup
+
+```bash
+# from the repository root, Python 3.10+
+python3 code/main.py            # writes ./output.csv for all 518 requests
+```
+
+Nothing to install: no third-party packages are required. An uncommitted `.env` in the
+repository root is only needed when you want to (re)extract the PNG evidence:
+
+```text
+LLM_PROVIDER=groq
+LLM_API_KEY=<your key>
+```
+
+The key is read from the environment at runtime, never printed, logged or cached. The
+11 screenshots are already extracted into `code/cache/media/`, so a normal run makes
+**zero** model calls and is fully reproducible offline.
+
+### Commands
+
+| Command | Purpose |
+| --- | --- |
+| `python3 code/main.py` | full run → `output.csv` (518 rows, sorted, deterministic) |
+| `python3 code/main.py --no-llm` | same, with the model path disabled (used for the graded run) |
+| `python3 code/main.py --cases dataset/sample_deletion_requests.csv --out /tmp/pred.csv --no-llm` | calibration run on the 32 public cases |
+| `python3 code/main.py --out /tmp/pred.csv --eval` | score a file against `dataset/sample_output.csv` |
+| `python3 code/evaluation/custom_cases.py` | participant-authored property tests (3 cases) |
+| `python3 code/main.py --m1` / `--m2` / `--link` | diagnostics: evidence parse, identity resolution, resource linking |
+| `python3 code/main.py --models` / `--choose` / `--test` | inspect the model catalogue, pick a model, ping it |
+
+### Architecture walkthrough (one page)
+
+```
+dataset/*.csv ──► audit/loaders.py          typed rows: requests, identities,
+                                            audit log, activity, rules
+dataset/evidence/* ──► audit/evidence/*     one Fact per normalised record
+      parse_sql.py    SQL snapshots         (SQLite in-memory, primaries + replicas)
+      parse_json.py   bundles + exports     (rows, hits.documents, 404 lookups)
+      parse_log.py    logs                  (trace stitching, event timestamps)
+      parse_text.py   handover notes
+      media.py        PDFs / PNGs           (PDF text locally, PNG via cached model)
+                       │
+                       ▼
+            FactIndex  (file_id, captured_at, system_id, resource_id,
+                        category, presence, identifiers, extra, topology, covers)
+                       │
+      ┌────────────────┼──────────────────────────────┐
+      ▼                ▼                              ▼
+ identity.py        link.py                       coverage
+ current snapshot   identifier-only linking       which snapshot enumerates a
+ + audit-log        + LINK_RESOURCE_IDENTITY      whole collection at what time
+ history            + source_resource_id
+                    + connector/backup rows
+                    + same-trace_id stitching
+      │                │                              │
+      └────────────────┴──────────────┬───────────────┘
+                                      ▼
+                              engine.py
+        ┌─────────────────────────────────────────────────────┐
+        │ 1. authorization: request_text classifier           │
+        │    (negation markers → deletion stems → multilingual)│
+        │ 2. admissibility: manifest captured_at ≤ audit_at;   │
+        │    log lines judged by their own event timestamp;    │
+        │    pre-request absence observations dropped          │
+        │ 3. state: present in ANY replica is remaining        │
+        │ 4. policy: deletion_rules.csv → DELETE / REDACT /    │
+        │    ANONYMIZE / RETAIN / TOMBSTONE                    │
+        │ 5. planning: FINDING → REMEDIATION → VERIFICATION,   │
+        │    stable sort (operation order, system, resource)   │
+        │ 6. evidence: findings cite a file_id; remediations   │
+        │    and post-remediation checks use ""                │
+        └─────────────────────────────────────────────────────┘
+                                      ▼
+                              output.csv
+```
+
+Key invariants, each one a rule that replaced an earlier guess:
+
+* **No proximity, no naming conventions.** A resource belongs to a subject only through an
+  exact identifier on the same row, an explicit identity-link event, a source-resource
+  column, a connector/backup entry, or log lines sharing a `trace_id`. Names are never used
+  to match, so decoy look-alikes cannot leak in.
+* **One grounded exception, measured.** The worker's account `DELETE_RECORD` row carries no
+  identifier. `audit/account_link.py` resolves it only when the request is alone at its
+  `reported_at` and exactly one account row sits within ±2 h of the claim, rejecting rows
+  already linked to another subject: measured precision 1.00, recall 0.29 on the samples,
+  and shared-claim-time batches are reported as ambiguous and omitted rather than guessed.
+* **Null tokens are not identifiers.** Log fields written as `null` / `none` / `n/a` are
+  dropped before identifier classification, so an anonymised analytics row or a fully
+  redacted support ticket cannot masquerade as exposed PII.
+* **Claims are never proof.** `reported_status`, `reported_result` and the
+  `CLASSIFY_REQUEST` intake rows are read only to *report* disagreement
+  (`classify_disagreements()`); state is reconstructed from evidence. The account rule uses
+  the claim only to identify which row the claim came from, never whether deletion happened.
+* **Absence needs coverage.** A record is only `VERIFY_RECORD_ABSENT` when a snapshot that
+  enumerates the whole collection and was captured at/before `audit_at` omits it. No
+  covering snapshot → no absence claim, even if a workflow said "deleted".
+* **One copy is enough to remain.** Replicas are compared, not collapsed; drift is a
+  finding, not a deletion.
+* **Policy decides the operation.** Account/search/export/attachment → delete; analytics →
+  anonymise; support conversation/tombstone → redact direct identifiers; security and
+  legal → retain (and verify present); finance → out of scope.
+* **Determinism.** Stable sorts, temperature 0, content-addressed cache, JSON with fixed
+  key order, and `--no-llm` for the graded artefact.
+
+### Repository layout
+
+```
+code/
+  main.py                 CLI, evidence index build, generate / eval / diagnostics
+  audit/
+    config.py             path resolution (works from any CWD, any OS)
+    loaders.py            typed CSV loaders
+    identity.py           current + historical identifier sets, exact resolution
+    link.py               identifier-only linking, snapshot coverage, absence citation
+    engine.py             state reconstruction, policy, planning, classifier
+    media.py              PDF/PNG extraction and caching
+    llm.py                Groq client, rate limiter, usage meter, disk cache
+    evidence/             facts.py + per-format parsers
+  cache/                  media extractions, model catalogue, usage meter
+  evaluation/
+    custom_cases.py       participant-authored property tests
+    evaluation_report.md  metrics, custom cases, failures and fixes
+    usage_report.md       providers, models, calls, tokens, cost
+```
+
+
 ## Dataset
 
 All participant-facing files are in `dataset/`:
@@ -131,18 +264,22 @@ To package `code.zip` from the repository root without bundling the dataset:
 **macOS / Linux:**
 
 ```bash
-zip -r code.zip README.md code -x "*/__pycache__/*" "*/.venv/*" "*/venv/*" "*/node_modules/*" "*/.git/*" "*/.DS_Store"
+zip -r code.zip README.md code -x "*/__pycache__/*" "*/.venv/*" "*/venv/*" "*/node_modules/*" "*/.git/*" "*/.DS_Store" ".env" "*.env" "*/.env" "*/.env.*" "*/cache/*"
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
+# .env, caches and bytecode live outside the archived set, so they are never bundled.
 Compress-Archive -Path README.md, code -DestinationPath code.zip -Force
+Get-ChildItem code -Recurse -Include "__pycache__",".env","*.env" -Force |
+  Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 ```
 
 When packaging `code.zip`:
 
 - Keep your evaluation reports in `code/evaluation/` so they are bundled automatically with `code` (or add `evaluation` to the archive command above if you placed them in a top-level `evaluation/` directory).
+- Never include `.env` or any other credentials file: the API key is read from the repository-root `.env` at runtime only, it is listed in `.gitignore`, and the archive commands above exclude it (only `README.md` and `code/` are added).
 - Do **not** include `dataset/`, virtual environments (`.venv`, `venv`, `node_modules`), or build caches (`__pycache__`). On Windows, keep `.venv` at the repository root (outside `code/`) and remove any `code/__pycache__` folders before running `Compress-Archive`.
 - Do **not** include nested archives (`.zip`, `.tar`, `.gz`, `.tgz`, `.7z`, `.rar`) inside `code.zip` — submissions containing nested archive files will be rejected.
 

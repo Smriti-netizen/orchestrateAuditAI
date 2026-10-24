@@ -1,0 +1,48 @@
+{
+  "file_id": "evidence_09",
+  "path": "C:\\Users\\smrit\\OneDrive\\deleteAuditAgent\\hackerrank-orchestrate-october26\\dataset\\evidence\\images\\search_index_inspector_20260901.png",
+  "captured_at": "2026-09-01T06:00:00Z",
+  "sha256": "75afdb0ae53a4510c83399a70d88073cb4fb2747454095756e4ddad1a8c70605",
+  "extracted": {
+    "screen": "Customer Search results in Search Console",
+    "subject": {
+      "user_id": "",
+      "emails": [
+        "g.silva76@gmail.com"
+      ],
+      "phones": [],
+      "resource_ids": []
+    },
+    "topology": "n/a",
+    "rows": [
+      {
+        "system": "Search",
+        "resource_id": "search_428",
+        "category": "SEARCH_INDEX_ENTRY",
+        "state": "PRESENT",
+        "identifiers": {
+          "user_id": "user_13",
+          "emails": [
+            "g.silva76@gmail.com"
+          ],
+          "phones": []
+        },
+        "details": "Display name: Gabriel Silva, Score: 9.84, Last indexed: 05:58:21 UTC"
+      },
+      {
+        "system": "Search",
+        "resource_id": "search_1874",
+        "category": "SEARCH_INDEX_ENTRY",
+        "state": "PRESENT",
+        "identifiers": {
+          "user_id": "",
+          "emails": [
+            "g.silva76@gmail.com"
+          ],
+          "phones": []
+        },
+        "details": "Display name: —, Score: 4.12, Last indexed: 05:55:03 UTC"
+      }
+    ]
+  }
+}

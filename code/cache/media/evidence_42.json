@@ -1,0 +1,46 @@
+{
+  "file_id": "evidence_42",
+  "path": "C:\\Users\\smrit\\OneDrive\\deleteAuditAgent\\hackerrank-orchestrate-october26\\dataset\\evidence\\images\\deleted_account_reference_20260310.png",
+  "captured_at": "2026-03-10T06:00:00Z",
+  "sha256": "68c28a72afd6ed184d5990d15c543f8a516face204f0360f732755a8a63c28be",
+  "extracted": {
+    "screen": "Customer Reference Registry detail page for user_17",
+    "subject": {
+      "user_id": "user_17",
+      "emails": [],
+      "phones": [],
+      "resource_ids": []
+    },
+    "topology": "primary",
+    "rows": [
+      {
+        "system": "Orders",
+        "resource_id": "ORD-20263245",
+        "category": "ORDER_RECORD",
+        "state": "ACTIVE",
+        "details": "Linked to customer, Created 11 Jan 2024 08:45"
+      },
+      {
+        "system": "Support",
+        "resource_id": "CS-3245",
+        "category": "SUPPORT_MESSAGE",
+        "state": "ACTIVE",
+        "details": "Linked to customer, Created 14 Feb 2024 12:16"
+      },
+      {
+        "system": "Support",
+        "resource_id": "CS-3378",
+        "category": "SUPPORT_MESSAGE",
+        "state": "ACTIVE",
+        "details": "Linked to customer, Created 03 Jun 2024 09:27"
+      },
+      {
+        "system": "Finance",
+        "resource_id": "FIN-7742",
+        "category": "FINANCE_RECORD",
+        "state": "ACTIVE",
+        "details": "Linked to customer, Created 22 Aug 2024 15:03"
+      }
+    ]
+  }
+}

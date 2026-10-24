@@ -1,0 +1,29 @@
+{
+  "file_id": "evidence_60",
+  "path": "C:\\Users\\smrit\\OneDrive\\deleteAuditAgent\\hackerrank-orchestrate-october26\\dataset\\evidence\\images\\marketing_profile_console.png",
+  "captured_at": "2026-09-16T07:20:00Z",
+  "sha256": "51fa0e6a38f8fa3629ba1b0d0b90b4ed139715956b97bfd09a6f1a6232c15df5",
+  "extracted": {
+    "screen": "Audience Operations profile detail for Soo-jin Park",
+    "subject": {
+      "user_id": "marketing_001",
+      "emails": [
+        "sj.park@naver.com"
+      ],
+      "phones": [
+        "+82-10-5837-9451"
+      ],
+      "resource_ids": []
+    },
+    "topology": "n/a",
+    "rows": [
+      {
+        "system": "Marketing",
+        "resource_id": "marketing_001",
+        "category": "MARKETING_PROFILE",
+        "state": "ACTIVE",
+        "details": "Live, Market: South Korea, Language: Korean, Email opt-in: Yes, SMS opt-in: No, Last refreshed: 15 Sep 2026 23:40 UTC"
+      }
+    ]
+  }
+}

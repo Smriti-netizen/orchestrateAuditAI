@@ -1,0 +1,16 @@
+{
+  "by_model": {
+    "openai/gpt-oss-20b": {
+      "calls": 1,
+      "input_tokens": 74,
+      "output_tokens": 5
+    },
+    "qwen/qwen3.8-27b": {
+      "calls": 32,
+      "input_tokens": 73582,
+      "output_tokens": 14976
+    }
+  },
+  "cache_hits": 0,
+  "calls": 33
+}
