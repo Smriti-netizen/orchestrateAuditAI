@@ -43,7 +43,8 @@ The blank template at `dataset/output.csv` is provided as a reference. Your fina
 ## Solution (this submission)
 
 A deterministic deletion-audit agent in `code/` (Python 3, standard library only; the
-model is an optional, cached extractor, not part of the decision path).
+model is an optional, cached extractor, not part of the decision path). For live-interview
+prep, see [`INTERVIEW.md`](./INTERVIEW.md) at the repository root (not part of `code.zip`).
 
 ### Setup
 
@@ -71,8 +72,9 @@ The key is read from the environment at runtime, never printed, logged or cached
 | `python3 code/main.py` | full run → `output.csv` (518 rows, sorted, deterministic) |
 | `python3 code/main.py --no-llm` | same, with the model path disabled (used for the graded run) |
 | `python3 code/main.py --cases dataset/sample_deletion_requests.csv --out /tmp/pred.csv --no-llm` | calibration run on the 32 public cases |
-| `python3 code/main.py --out /tmp/pred.csv --eval` | score a file against `dataset/sample_output.csv` |
-| `python3 code/evaluation/custom_cases.py` | participant-authored property tests (5 cases) |
+| `python3 code/main.py --out /tmp/pred.csv --eval` | score a file against `dataset/sample_output.csv` (status, exact, sequence, positional, field) |
+| `python3 code/evaluation/validate_output.py output.csv` | structural contract check (518 rows, numeric `case_id` order, JSON steps, `NOT_APPLICABLE` rule) |
+| `python3 code/evaluation/custom_cases.py` | participant-authored property tests (5 cases; expect 5/5) |
 | `python3 code/main.py --m1` / `--m2` / `--link` | diagnostics: evidence parse, identity resolution, resource linking |
 | `python3 code/main.py --models` / `--choose` / `--test` | inspect the model catalogue, pick a model, ping it |
 
@@ -122,43 +124,73 @@ dataset/evidence/* ──► audit/evidence/*     one Fact per normalised record
                               output.csv
 ```
 
-Key invariants, each one a rule that replaced an earlier guess:
+Key invariants (each replaced a measured guess):
 
-* **No proximity, no naming conventions.** A resource belongs to a subject only through an
-  exact identifier on the same row, an explicit identity-link event, a source-resource
-  column, a connector/backup entry, or log lines sharing a `trace_id`. Names are never used
-  to match, so decoy look-alikes cannot leak in.
-* **One grounded exception, measured.** The worker's account `DELETE_RECORD` row carries no
-  identifier. `audit/account_link.py` resolves it from the workflow claim: candidate rows are
-  claim-compatible, inside `[requested_at, audit_at]` and within ±2 h of `reported_at`; rows
-  already linked to another subject are excluded, candidates are assigned one-to-one at
-  confidence `1/k`, cases are served best-first, and picks below the 0.25 floor are omitted.
-  Batch order and anchor adjacency were measured and rejected first (precision 0.25–1.00 on
-  2–11 picks). The resolved account carries only its own **absent** facts — a provenance
-  guess may prove the row is gone, never that some record still exists.
-* **Membership needs evidence at the cut-off.** A resource enters the audit only through an
-  admissible fact or an explicit activity/provenance link inside the request window; 158
-  pairs on the full run were discoverable only from post-`audit_at` snapshots and had to be
-  dropped. A later snapshot of the same collection may also retire a stale `PRESENT` row
-  (`_superseded()`), which is inert on this dataset but keeps a stale primary from outliving
-  a fresher one.
-* **Null tokens are not identifiers.** Log fields written as `null` / `none` / `n/a` are
-  dropped before identifier classification, so an anonymised analytics row or a fully
-  redacted support ticket cannot masquerade as exposed PII.
-* **Claims are never proof.** `reported_status`, `reported_result` and the
-  `CLASSIFY_REQUEST` intake rows are read only to *report* disagreement
-  (`classify_disagreements()`); state is reconstructed from evidence. The account rule uses
-  the claim only to identify which row the claim came from, never whether deletion happened.
-* **Absence needs coverage.** A record is only `VERIFY_RECORD_ABSENT` when a snapshot that
-  enumerates the whole collection and was captured at/before `audit_at` omits it. No
-  covering snapshot → no absence claim, even if a workflow said "deleted".
-* **One copy is enough to remain.** Replicas are compared, not collapsed; drift is a
-  finding, not a deletion.
-* **Policy decides the operation.** Account/search/export/attachment → delete; analytics →
-  anonymise; support conversation/tombstone → redact direct identifiers; security and
-  legal → retain (and verify present); finance → out of scope.
-* **Determinism.** Stable sorts, temperature 0, content-addressed cache, JSON with fixed
-  key order, and `--no-llm` for the graded artefact.
+* **No proximity, no naming conventions.** Resources link only through exact identifiers,
+  explicit identity-link events, `source_resource_id`, connector/backup rows, or shared
+  `trace_id` log lines — never through names (3 shared-name decoys, 0 false links).
+* **Account provenance (ranked one-to-one resolver).** The worker's account
+  `DELETE_RECORD` row has no identifier. `audit/account_link.py` builds candidate tiers
+  (claim-compatible `DELETE_RECORD` on `account_service`, inside `[requested_at, audit_at]`,
+  within ±2 h of `reported_at`, excluding rows already owned by another subject). Candidates
+  are assigned **one-to-one** at confidence **1/k** per batch; cases are served best-first;
+  picks below a **0.25** floor (chosen by **17/17** leave-one-out folds) are **omitted**.
+  Measured on 518 requests: **342/518** resolve to **342 distinct** account rows (**0**
+  reused); **176** cases get no provenance account. **Trade-off:** an omitted account step
+  is a guaranteed miss on that resource, while a wrong guess can occasionally hit the
+  reference — but a provenance guess may attach only that row's **ABSENT** facts, so it can
+  prove absence, never create a remaining-record finding; **deletion_status is unchanged**
+  by a guess either way. Batch-order and anchor-adjacency mappers were rejected first
+  (precision **0.25–1.00** on 2–11 picks).
+* **Analytics batch rule (structurally forced batches only).** Anonymous `analytics_*`
+  rows in a worker batch are linked only when the batch has **k ≥ 2** anonymous rows and
+  exactly **k** cases with no identifier-linked analytics resource; pairing follows
+  activity order → numeric `case_id` order (**2/2** on the 32 samples, **54** links on
+  518; **132** batches reported ambiguous and left unlinked).
+* **`_record_exists` (not literal `PRESENT` only).** Existence means `presence == PRESENT`
+  **or** the row is a retained anonymised/redacted form (`anonymized` / `redacted` flags).
+  The literal rule `record_exists = (presence == PRESENT)` was measured and **rejected**:
+  it regressed the 32 samples to **18/32** exact, **156/193** positional (spurious second
+  `VERIFY_RECORD_ABSENT` on retained anonymised analytics). The principled helper keeps
+  samples identical and flips **10** full-run cases (`case_383`–`case_392`,
+  `INCOMPLETE` → `COMPLETE`, **−28** steps vs the pre-fix full run; **2507** steps now).
+* **Membership at `audit_at`.** A resource enters the plan only with an admissible fact or
+  an in-window activity/provenance link. **158** `(case, resource)` pairs were tied only
+  by post-`audit_at` snapshots and were removed (**−22** steps, **0** status flips).
+  **`_superseded()`** retires a stale `PRESENT` row when a fresher same-collection,
+  same-topology snapshot exists at/before `audit_at` — **0** pairs on this dataset (all
+  **1113** candidate supersede snapshots fall after every case's `audit_at`); kept for the
+  synthetic post-audit fixture in `code/evaluation/cases/`. A **per-stream "newest row"**
+  citation rule and **CHECK_RESTORE_ACCESS** claim override were measured and **rejected**
+  (broke `case_09` evidence; **4/123** restore claims contradict facts).
+* **Null tokens are not identifiers.** Literal `null` / `none` / `n/a` in logs are dropped
+  before identifier classification.
+* **Claims are never proof.** Workflow statuses and `CLASSIFY_REQUEST` rows are reported
+  only via `classify_disagreements()`; state comes from evidence.
+* **Absence needs coverage.** `VERIFY_RECORD_ABSENT` requires a covering snapshot at/before
+  `audit_at` that enumerates the collection.
+* **Replica drift.** Present in **any** replica topology counts as present; drift is a
+  finding, not deletion.
+* **Policy → operation.** Categories map to DELETE / ANONYMIZE / REDACT / RETAIN per
+  `deletion_rules.csv`; finance records are out of scope.
+* **Determinism and ordering.** Stable sorts, temperature 0, `--no-llm` graded run; rows
+  written in **numeric `case_id` order** (`case_33` before `case_100`), enforced by
+  `validate_output.py`.
+
+### Design decisions
+
+| Theme | Choice | Number that justified it |
+| --- | --- | --- |
+| Core engine | Deterministic stdlib Python; LLM only for 11 PNGs (cached in `code/media_extractions/`) | **0** model calls on final 518 run; **33** calls / **≈ $0.119** one-off cache build (`usage_report.md`) |
+| Linking | Exact identifiers only | **0** email/phone/hash collisions; **0** ambiguous resolves |
+| Replica / time | Any replica `PRESENT` counts; facts need `captured_at ≤ audit_at` | **158** post-cut-off pairs removed |
+| Policy | Rule table → operation mapping | Categories drive DELETE/REDACT/ANONYMIZE/RETAIN steps |
+| Ordering | Phase → operation rank → `system_id` → `resource_id` | Positional scoring on 32 samples |
+| Account | Ranked 1:1 resolver with 0.25 floor | **342/518** resolved, **0** reuse, **176** omitted |
+| Analytics | Structurally forced batches only | **54** links; ambiguous batches skipped |
+| `_record_exists` | PRESENT ∨ anonymized ∨ redacted | Rejected literal PRESENT-only: **18/32** exact, **156/193** positional |
+| Omission vs guess | Omit low-confidence provenance | LOO floor **0.25**; wrong guess cannot invent findings |
+| Packaging | `media_extractions/` outside `code/cache/` | Zip + `--no-llm` reproduces `output.csv` byte-identically |
 
 ### Repository layout
 
@@ -178,10 +210,15 @@ code/
   cache/                  model catalogue and usage meter
   evaluation/
     cases/                C4-C5 property tests (post-audit cut-off, retention + flow)
-    custom_cases.py       participant-authored property tests
+    custom_cases.py       participant-authored property tests (run standalone; 5/5)
+    validate_output.py    structural validator for root `output.csv`
     evaluation_report.md  metrics, custom cases, failures and fixes
     usage_report.md       providers, models, calls, tokens, cost
 ```
+
+Root `output.csv` is sorted by **numeric** `case_id` (not lexicographic). The 11 screenshot
+extractions live under `code/media_extractions/` (committed, **outside** `code/cache/` so the
+documented zip exclusion `*/cache/*` cannot drop them).
 
 
 ## Dataset
