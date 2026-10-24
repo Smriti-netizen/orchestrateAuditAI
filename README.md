@@ -61,7 +61,7 @@ LLM_API_KEY=<your key>
 ```
 
 The key is read from the environment at runtime, never printed, logged or cached. The
-11 screenshots are already extracted into `code/cache/media/`, so a normal run makes
+11 screenshots are already extracted into `code/media_extractions/`, so a normal run makes
 **zero** model calls and is fully reproducible offline.
 
 ### Commands
@@ -72,7 +72,7 @@ The key is read from the environment at runtime, never printed, logged or cached
 | `python3 code/main.py --no-llm` | same, with the model path disabled (used for the graded run) |
 | `python3 code/main.py --cases dataset/sample_deletion_requests.csv --out /tmp/pred.csv --no-llm` | calibration run on the 32 public cases |
 | `python3 code/main.py --out /tmp/pred.csv --eval` | score a file against `dataset/sample_output.csv` |
-| `python3 code/evaluation/custom_cases.py` | participant-authored property tests (3 cases) |
+| `python3 code/evaluation/custom_cases.py` | participant-authored property tests (5 cases) |
 | `python3 code/main.py --m1` / `--m2` / `--link` | diagnostics: evidence parse, identity resolution, resource linking |
 | `python3 code/main.py --models` / `--choose` / `--test` | inspect the model catalogue, pick a model, ping it |
 
@@ -129,10 +129,19 @@ Key invariants, each one a rule that replaced an earlier guess:
   column, a connector/backup entry, or log lines sharing a `trace_id`. Names are never used
   to match, so decoy look-alikes cannot leak in.
 * **One grounded exception, measured.** The worker's account `DELETE_RECORD` row carries no
-  identifier. `audit/account_link.py` resolves it only when the request is alone at its
-  `reported_at` and exactly one account row sits within ±2 h of the claim, rejecting rows
-  already linked to another subject: measured precision 1.00, recall 0.29 on the samples,
-  and shared-claim-time batches are reported as ambiguous and omitted rather than guessed.
+  identifier. `audit/account_link.py` resolves it from the workflow claim: candidate rows are
+  claim-compatible, inside `[requested_at, audit_at]` and within ±2 h of `reported_at`; rows
+  already linked to another subject are excluded, candidates are assigned one-to-one at
+  confidence `1/k`, cases are served best-first, and picks below the 0.25 floor are omitted.
+  Batch order and anchor adjacency were measured and rejected first (precision 0.25–1.00 on
+  2–11 picks). The resolved account carries only its own **absent** facts — a provenance
+  guess may prove the row is gone, never that some record still exists.
+* **Membership needs evidence at the cut-off.** A resource enters the audit only through an
+  admissible fact or an explicit activity/provenance link inside the request window; 158
+  pairs on the full run were discoverable only from post-`audit_at` snapshots and had to be
+  dropped. A later snapshot of the same collection may also retire a stale `PRESENT` row
+  (`_superseded()`), which is inert on this dataset but keeps a stale primary from outliving
+  a fresher one.
 * **Null tokens are not identifiers.** Log fields written as `null` / `none` / `n/a` are
   dropped before identifier classification, so an anonymised analytics row or a fully
   redacted support ticket cannot masquerade as exposed PII.
@@ -165,8 +174,10 @@ code/
     media.py              PDF/PNG extraction and caching
     llm.py                Groq client, rate limiter, usage meter, disk cache
     evidence/             facts.py + per-format parsers
-  cache/                  media extractions, model catalogue, usage meter
+  media_extractions/      cached screenshot extractions (shipped; no network at run time)
+  cache/                  model catalogue and usage meter
   evaluation/
+    cases/                C4-C5 property tests (post-audit cut-off, retention + flow)
     custom_cases.py       participant-authored property tests
     evaluation_report.md  metrics, custom cases, failures and fixes
     usage_report.md       providers, models, calls, tokens, cost
@@ -282,6 +293,7 @@ When packaging `code.zip`:
 - Never include `.env` or any other credentials file: the API key is read from the repository-root `.env` at runtime only, it is listed in `.gitignore`, and the archive commands above exclude it (only `README.md` and `code/` are added).
 - Do **not** include `dataset/`, virtual environments (`.venv`, `venv`, `node_modules`), or build caches (`__pycache__`). On Windows, keep `.venv` at the repository root (outside `code/`) and remove any `code/__pycache__` folders before running `Compress-Archive`.
 - Do **not** include nested archives (`.zip`, `.tar`, `.gz`, `.tgz`, `.7z`, `.rar`) inside `code.zip` — submissions containing nested archive files will be rejected.
+- Keep `code/media_extractions/` **inside** the archive. It holds the 11 committed screenshot extractions; it deliberately sits outside `code/cache/` so the cache exclusion above cannot drop it, and a `--no-llm` run needs it to reproduce `output.csv` byte for byte. Verified by unzipping `code.zip`, adding `dataset/`, and diffing a fresh run against the submitted file.
 
 Before submitting, confirm that:
 

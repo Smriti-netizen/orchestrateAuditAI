@@ -17,8 +17,3 @@ ACTIVITY = DATA_DIR / "system_activity.csv"
 RULES = DATA_DIR / "deletion_rules.csv"
 EVIDENCE_MANIFEST = DATA_DIR / "evidence_files.csv"
 
-ENV_LLM_PROVIDER = "LLM_PROVIDER"
-ENV_LLM_MODEL = "LLM_MODEL"
-ENV_LLM_API_KEY = "LLM_API_KEY"
-
-DEFAULT_LLM_MODEL = "gemini-2.0-flash"

@@ -128,13 +128,14 @@ def _from_service_export(service, gk, rec, file_id, captured_at):
         extra = {"message_excerpt": rec.get("message_excerpt")}
 
     # Explicit existence/redaction flags so the state engine never confuses
-    # "row present but already anonymised" with "row is gone".
-    if gk != "profile_lookups" or presence == PRESENT:
-        extra["record_exists"] = True
+    # "row present but already anonymised" with "row is gone".  A miss is not
+    # existence: only a present observation, or the retained anonymised /
+    # redacted form, means the record still exists at the observation time.
     if gk in ("profiles",):
         extra["anonymized"] = not bool(email or phone or email_hash or user_ref)
     if gk in ("tickets",):
         extra["redacted"] = not bool(email or phone or name)
+    extra["record_exists"] = _record_exists(presence, extra)
 
     return Fact(
         file_id=file_id, captured_at=str(rec.get("observed_at") or captured_at),
@@ -175,6 +176,16 @@ def _category_from_collection(collection):
     return "UNKNOWN"
 
 
+def _record_exists(presence, extra):
+    """Whether the observation proves the row still exists.
+
+    A hit is existence; a miss is not.  A row that is observed only in its
+    retained anonymised/redacted form also exists - that form is the outcome
+    the policy asks for, not absence.
+    """
+    return bool(presence == PRESENT or extra.get("anonymized") or extra.get("redacted"))
+
+
 def _from_record(data_store, collection, rec, file_id, captured_at):
     resource_id = str(rec.get("resource_id") or "")
     system_id = data_store or "unknown"
@@ -209,11 +220,11 @@ def _from_record(data_store, collection, rec, file_id, captured_at):
         extra["retention_until"] = rec.get("retained_until")
     if rec.get("source_resource_id"):
         extra["source_resource_id"] = rec["source_resource_id"]
-    extra["record_exists"] = True
     if category in ("ANALYTICS_PROFILE", "PRODUCT_TELEMETRY"):
         extra["anonymized"] = not bool(email or phone or email_hash or user_ref)
     if category == "ACCOUNT_TOMBSTONE":
         extra["redacted"] = not bool(name or email or phone or email_hash)
+    extra["record_exists"] = _record_exists(presence, extra)
     return Fact(
         file_id=file_id, captured_at=str(captured_at or rec.get("observed_at") or rec.get("captured_at") or ""),
         system_id=system_id, resource_id=resource_id, category=category, presence=presence,

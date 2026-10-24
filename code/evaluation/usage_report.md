@@ -16,7 +16,7 @@ The agent is **deterministic by design**: every decision, step ordering, evidenc
 and JSON serialisation is rule-based stdlib Python. Model calls are used for exactly one
 job — turning the 11 PNG screenshots into normalised records at index-build time. The four
 PDFs are parsed locally (no tokens). Each extraction is cached to
-`code/cache/media/{file_id}.json` under a sha256 of the file plus `PROMPT_VERSION`, so it
+`code/media_extractions/{file_id}.json` under a sha256 of the file plus `PROMPT_VERSION`, so it
 is paid for once and reused byte-identically afterwards.
 
 Consequently the graded full-dataset run performs **0 new model calls**: all 11 images hit
@@ -26,7 +26,7 @@ from a clean checkout.
 
 ### Which run populated the media cache
 
-The cache under `code/cache/media/` was written by the **initial media-extraction run on
+The extraction cache under `code/media_extractions/` was written by the **initial media-extraction run on
 2026-10-24** (11 entries, timestamps 20:49–20:56 local). That is the run metered in
 `code/cache/usage.json`: 32 `qwen/qwen3.8-27b` vision calls (73 582 input / 14 976 output
 tokens) plus 1 `openai/gpt-oss-20b` text smoke call (74 / 5 tokens) — 33 calls in total.

@@ -14,13 +14,19 @@ def parse_sql_file(path, file_id, captured_at):
         con = sqlite3.connect(":memory:")
         con.executescript(text)
     except Exception as exc:
-        # Fall back to line-by-line execution for pragma/comment quirks.
+        # Fall back to line-by-line execution for pragma/comment quirks.  Every
+        # skipped statement is recorded: a partially loaded dump still claims
+        # ``covers`` on the rows it did load, so silent failures would turn a
+        # broken snapshot into false absence evidence.
+        errors.append({"stage": "executescript",
+                       "error": f"{type(exc).__name__}: {exc}"})
         con = sqlite3.connect(":memory:")
-        for stmt in [s.strip() for s in text.split(";") if s.strip()]:
+        for number, stmt in enumerate([s.strip() for s in text.split(";") if s.strip()], 1):
             try:
                 con.execute(stmt)
-            except Exception:
-                pass
+            except Exception as inner:
+                errors.append({"stage": "fallback", "statement": number,
+                               "error": f"{type(inner).__name__}: {inner}"})
 
     tables = [r[0] for r in con.execute(
         "SELECT name FROM sqlite_master WHERE type='table'").fetchall()]

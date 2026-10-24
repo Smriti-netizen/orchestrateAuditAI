@@ -86,6 +86,7 @@ class LinkedResource:
     category: str = "UNKNOWN"
     facts: list = field(default_factory=list)     # every Fact touching this resource
     link_sources: set = field(default_factory=set)  # "fact" | "activity" | "source_resource_id"
+    link_times: set = field(default_factory=set)    # when an explicit link was recorded
 
     @property
     def evidence_ids(self):
@@ -195,7 +196,8 @@ class Linker:
                 continue
             resource_id, _paren, _email, user_id = m.groups()
             system_id = row.target_system or system_for_resource(resource_id)
-            self._links.setdefault(user_id, {})[(system_id, resource_id)] = row.activity_id
+            self._links.setdefault(user_id, {})[(system_id, resource_id)] = (
+                row.activity_id, row.event_time)
 
     def facts_for(self, system_id, resource_id):
         """Facts indexed for one (system, resource), regardless of linking."""
@@ -208,7 +210,7 @@ class Linker:
         ids = self.resolver.user_identifier_set(user_id)
         out = {}
 
-        def add(system_id, resource_id, fact=None, source="fact"):
+        def add(system_id, resource_id, fact=None, source="fact", link_time=None):
             if not resource_id:
                 return
             if not system_id or system_id == "unknown":
@@ -221,6 +223,8 @@ class Linker:
                 if fact.category and fact.category != "UNKNOWN":
                     item.category = fact.category
             item.link_sources.add(source)
+            if link_time:
+                item.link_times.add(str(link_time))
 
         for fact in self.facts:
             if not idents_match(fact.identifiers, ids):
@@ -230,8 +234,9 @@ class Linker:
             if source:
                 add(system_for_resource(source), source, fact, "source_resource_id")
 
-        for (system_id, resource_id), activity_id in self._links.get(user_id, {}).items():
-            add(system_id, resource_id, None, "activity")
+        for (system_id, resource_id), (_activity_id, event_time) in \
+                self._links.get(user_id, {}).items():
+            add(system_id, resource_id, None, "activity", link_time=event_time)
 
         # Fold in the remaining rows that share a linked resource id but carry
         # no identifying field themselves (absence lookups, counts, flags).

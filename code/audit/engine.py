@@ -11,7 +11,7 @@ Everything here is deterministic and evidence-driven:
 from dataclasses import dataclass, field
 
 from audit.account_link import add_provenance_account, add_provenance_resource
-from audit.evidence.facts import PRESENT, SYSTEM_CATEGORY
+from audit.evidence.facts import ABSENT, PRESENT, SYSTEM_CATEGORY
 
 # category -> policy family
 DELETE_CATEGORIES = {
@@ -96,7 +96,30 @@ def _resolve_category(facts, fallback_system):
     return SYSTEM_CATEGORY.get(fallback_system, "UNKNOWN")
 
 
-def decide_resource(system_id, resource_id, facts):
+def _superseded(fact, resource_id, coverage, audit_at):
+    """A later snapshot of the same collection that omits the row wins.
+
+    Same system, collection and topology only: a fresh primary snapshot says
+    nothing about a replica copy, so replica drift keeps counting.  The snapshot
+    must be newer than the observation and admissible in its own right (both its
+    embedded time and its manifest capture time at or before ``audit_at``).
+    """
+    collection = str((fact.extra or {}).get("collection") or "")
+    for snap in coverage:
+        if snap.system_id != fact.system_id or snap.topology != fact.topology:
+            continue
+        if snap.collection != collection:
+            continue
+        if not (fact.captured_at < snap.captured_at <= audit_at):
+            continue
+        if (snap.file_captured_at or snap.captured_at) > audit_at:
+            continue
+        if resource_id not in snap.resource_ids:
+            return True
+    return False
+
+
+def decide_resource(system_id, resource_id, facts, coverage=None, audit_at=None):
     """Return a Decision for one linked resource, or None when not actionable."""
     if not facts:
         return None
@@ -105,10 +128,15 @@ def decide_resource(system_id, resource_id, facts):
         return None
 
     # Presence at audit time: any admissible fact showing the record exists,
-    # including a stale replica copy (replica drift keeps data alive).
-    exists = any(f.presence == PRESENT or f.extra.get("record_exists") for f in facts)
-    latest_present = _latest([f for f in facts
-                              if f.presence == PRESENT or f.extra.get("record_exists")])
+    # including a stale replica copy (replica drift keeps data alive) but not a
+    # row that a later snapshot of the same collection shows gone.
+    present = [f for f in facts
+               if f.presence == PRESENT or f.extra.get("record_exists")]
+    if coverage is not None and audit_at:
+        present = [f for f in present
+                   if not _superseded(f, resource_id, coverage, audit_at)]
+    exists = bool(present)
+    latest_present = _latest(present)
 
     def absent_evidence():
         absent = _latest([f for f in facts
@@ -265,7 +293,12 @@ def analyze_case(req, resolver, linker, coverage, absence_fn,
     uid = resolver.resolve(req.email)
     linked = linker.resources(uid) if uid else {}
     if provenance_account:
-        linked = add_provenance_account(linked, provenance_account)
+        # A provenance guess may only prove absence: a 404 lookup that names the
+        # account row is admissible as the absence proof, while any "record is
+        # present" observation about a guessed account could invent a finding.
+        absent_only = [f for f in linker.facts_for("account_service", provenance_account)
+                       if f.presence == ABSENT and not f.extra.get("record_exists")]
+        linked = add_provenance_account(linked, provenance_account, absent_only)
     for resource_id, facts in sorted((provenance_analytics or {}).items()):
         linked = add_provenance_resource(linked, "analytics_platform", resource_id,
                                          "ANALYTICS_PROFILE", facts=facts)
@@ -275,8 +308,18 @@ def analyze_case(req, resolver, linker, coverage, absence_fn,
             # A display label (e.g. a ticket code from a screenshot) is not a
             # system resource id; never turn it into a step.
             continue
+        item = linked[(system_id, resource_id)]
+        # A resource whose only membership evidence was captured after the cut-off
+        # is not in scope: the answer may not be built from the future.  Explicit
+        # links (an activity row, or a provenance claim inside the request window)
+        # establish membership themselves.
+        if {"activity", "activity_provenance"} & item.link_sources:
+            if item.link_times and not any(t <= req.audit_at for t in item.link_times):
+                continue
+        elif item.facts and not any(_at_or_before(f, req.audit_at) for f in item.facts):
+            continue
         # Only facts that belong to this system's copy are state evidence for it.
-        admissible = [f for f in linked[(system_id, resource_id)].facts
+        admissible = [f for f in item.facts
                       if f.system_id == system_id and _at_or_before(f, req.audit_at)]
         # An absence observation (lookup that returned nothing) made before the
         # deletion request says nothing about the post-request state, so it can
@@ -284,7 +327,8 @@ def analyze_case(req, resolver, linker, coverage, absence_fn,
         facts = [f for f in admissible
                  if not (f.presence == "ABSENT" and f.extra.get("event_stream")
                          and f.captured_at < req.requested_at)]
-        decision = decide_resource(system_id, resource_id, facts)
+        decision = decide_resource(system_id, resource_id, facts,
+                                   coverage=coverage, audit_at=req.audit_at)
         if decision is None and not facts:
             item = linked[(system_id, resource_id)]
             category = item.category if item.category != "UNKNOWN" else \

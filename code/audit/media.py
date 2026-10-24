@@ -1,8 +1,8 @@
 """Media evidence: local PDF text extraction + cached VLM extraction for screenshots.
 
 Images are read once per content hash through the Groq vision model and cached under
-code/cache/media/. The runtime never needs the network if the cache is present, so a
-graded run is deterministic and spends no quota.
+code/media_extractions/. That directory is shipped inside code.zip (it is not under
+code/cache/), so the runtime never needs the network and a graded run is deterministic.
 """
 import base64
 import hashlib
@@ -12,7 +12,7 @@ from pathlib import Path
 from audit.config import REPO_ROOT
 from audit.evidence.facts import Fact
 
-MEDIA_CACHE = REPO_ROOT / "code" / "cache" / "media"
+MEDIA_CACHE = REPO_ROOT / "code" / "media_extractions"
 PROMPT_VERSION = 3  # bump when VISION_PROMPT changes; forces --force re-extraction
 
 VISION_PROMPT = """You extract structured records from a business application screenshot.

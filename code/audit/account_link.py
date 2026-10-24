@@ -63,7 +63,8 @@ def _seconds(stamp):
     return datetime.strptime(stamp, "%Y-%m-%dT%H:%M:%SZ").timestamp()
 
 
-def analyse_candidates(requests, resolver, linker, activity):
+def analyse_candidates(requests, resolver, linker, activity,
+                       window=ACCOUNT_CLAIM_WINDOW):
     """Return ``(candidates, linked_accounts)`` for every request.
 
     ``candidates[case_id]`` is a list of ``(distance_seconds, activity_index,
@@ -101,7 +102,7 @@ def analyse_candidates(requests, resolver, linker, activity):
             if owner.get(row.resource_id, set()) - {req.case_id}:
                 continue
             dist = abs(_seconds(row.event_time) - claim)
-            if dist > ACCOUNT_CLAIM_WINDOW:
+            if dist > window:
                 continue
             found.append((dist, order[row.activity_id], row.resource_id))
         if found:
@@ -117,14 +118,9 @@ def resolve_account_rows(requests, resolver, linker, activity,
     ``(case_id, reason)`` for the cases deliberately left alone.
     """
     floor = CONFIDENCE_FLOOR if floor is None else floor
-    global ACCOUNT_CLAIM_WINDOW
-    saved = ACCOUNT_CLAIM_WINDOW
-    if window is not None:
-        ACCOUNT_CLAIM_WINDOW = window
-    try:
-        candidates, linked = analyse_candidates(requests, resolver, linker, activity)
-    finally:
-        ACCOUNT_CLAIM_WINDOW = saved
+    window = ACCOUNT_CLAIM_WINDOW if window is None else window
+    candidates, linked = analyse_candidates(requests, resolver, linker, activity,
+                                            window=window)
 
     ambiguous = []
     scored = []
@@ -170,7 +166,11 @@ def add_provenance_resource(linked, system_id, resource_id, category, facts=()):
     return out
 
 
-def add_provenance_account(linked, resource_id):
-    """Copy of ``linked`` plus the provenance-resolved account (no facts)."""
+def add_provenance_account(linked, resource_id, facts=()):
+    """Copy of ``linked`` plus the provenance-resolved account.
+
+    Only absence observations travel with it: a provenance guess may prove that
+    the account row is gone, never that a record still exists.
+    """
     return add_provenance_resource(linked, "account_service", resource_id,
-                                   "USER_PROFILE")
+                                   "USER_PROFILE", facts=facts)

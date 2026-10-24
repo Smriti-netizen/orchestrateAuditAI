@@ -191,8 +191,8 @@ def run_m2(sample_path=None) -> dict:
     for r in samples:
         uid = resolved[r.case_id]
         ids = resolver.user_identifier_set(uid)
-        matched = [f for f in facts if _idents_match(f.identifiers, ids)]
-        matched_ev = [e for e in events if _idents_match(e.get("identifiers") or {}, ids)]
+        matched = [f for f in facts if idents_match(f.identifiers, ids)]
+        matched_ev = [e for e in events if idents_match(e.get("identifiers") or {}, ids)]
         per_case_facts[r.case_id] = matched
         files = sorted({f.file_id for f in matched} | {e["file_id"] for e in matched_ev})
         systems = sorted({f.system_id for f in matched} | {e["system_id"] for e in matched_ev})
@@ -208,24 +208,6 @@ def run_m2(sample_path=None) -> dict:
         print(f"  UNRESOLVED {r.case_id} {r.email}")
     return {"resolver": resolver, "resolved": resolved, "unresolved_all": dr,
             "per_case_facts": per_case_facts}
-
-
-def _idents_match(identifiers, ids):
-    """Exact-only match of a fact/event identifier dict to a user's identifier set."""
-    identifiers = identifiers or {}
-    ref = str(identifiers.get("user_ref") or "").strip()
-    if ref and ref == ids["user_id"]:
-        return True
-    email = str(identifiers.get("email") or "").strip().lower()
-    if email and email in ids["emails"]:
-        return True
-    h = str(identifiers.get("email_hash") or "").strip().lower()
-    if h and h in ids["hashes"]:
-        return True
-    phone = "".join(ch for ch in str(identifiers.get("phone") or "") if ch.isdigit())
-    if phone and phone in ids["phones"]:
-        return True
-    return False
 
 
 def run_link_check(sample_path=None) -> dict:
@@ -299,6 +281,12 @@ def run_link_check(sample_path=None) -> dict:
             "hit": hit, "total": total}
 
 
+def _case_key(case_id):
+    """Dataset order: case_33 before case_100 (numeric, not lexicographic)."""
+    head, _, tail = str(case_id).rpartition("_")
+    return (0, int(tail), head) if tail.isdigit() else (1, 0, str(case_id))
+
+
 def run_generate(cases_path=None, out_path=None):
     """Produce output.csv for every request (the graded artefact)."""
     import csv
@@ -343,7 +331,7 @@ def run_generate(cases_path=None, out_path=None):
         rows.append({"case_id": req.case_id, "deletion_status": status,
                      "steps_json": json.dumps(steps, ensure_ascii=False,
                                               separators=(",", ":"))})
-    rows.sort(key=lambda r: r["case_id"])
+    rows.sort(key=lambda r: _case_key(r["case_id"]))
     target = out_path or config.OUTPUT_PATH
     with open(target, "w", encoding="utf-8", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=["case_id", "deletion_status", "steps_json"])

@@ -6,12 +6,18 @@ answers are never consulted. Run:
 
     python3 code/evaluation/custom_cases.py        (Windows: py ...)
 
-The three cases target the parts of the contract that are easiest to get wrong:
+The five cases target the parts of the contract that are easiest to get wrong:
   1. authorization gate  - a non-deletion request must never produce steps;
   2. identifier breadth  - a historical email must resolve to the same subject
                            and produce identical steps as the current email;
   3. multilingual scope  - a deletion request written in another language must
-                           be treated as an authorized deletion.
+                           be treated as an authorized deletion;
+  4. time cut-off        - evidence captured after audit_at must not change an
+                           answer (cases/post_audit_snapshot.py);
+  5. policy retention    - a retained audit record stays PRESENT, and an enabled
+                           data flow is reported, remediated and verified while the
+                           same subject with the flag off is clean
+                           (cases/retained_and_flow.py).
 """
 import sys
 from pathlib import Path
@@ -132,11 +138,14 @@ def case_3_multilingual(data, resolver, linker, coverage, absence_fn):
                 f"steps={len(steps)}")
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cases import EXTRA_CASES  # noqa: E402
+
 CASES = [
     ("C1 authorization gate (non-deletion text)", case_1_authorization_gate),
     ("C2 historical-email resolution", case_2_historical_email),
     ("C3 multilingual deletion request", case_3_multilingual),
-]
+] + [(name, (lambda _fn: (lambda *_: _fn()))(fn)) for name, fn in EXTRA_CASES]
 
 
 def run():

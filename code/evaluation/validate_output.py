@@ -36,6 +36,12 @@ OPERATIONS = {
 }
 
 
+def case_key(case_id):
+    """Numeric order, matching dataset/deletion_requests.csv (case_33 < case_100)."""
+    head, _, tail = str(case_id).rpartition("_")
+    return (0, int(tail), head) if tail.isdigit() else (1, 0, str(case_id))
+
+
 def main(argv):
     root = Path(__file__).resolve().parents[2]
     out = Path(argv[1]) if len(argv) > 1 else root / "output.csv"
@@ -55,8 +61,8 @@ def main(argv):
         errors.append(f"{len(got)} rows, expected {len(wanted)}")
     if len(set(got)) != len(got):
         errors.append("duplicate case ids")
-    if got != sorted(got):
-        errors.append("rows are not sorted by case_id")
+    if got != sorted(got, key=case_key):
+        errors.append("rows are not in case_id order (case_33 before case_100)")
     if set(got) != set(wanted):
         missing = sorted(set(wanted) - set(got))[:5]
         extra = sorted(set(got) - set(wanted))[:5]
