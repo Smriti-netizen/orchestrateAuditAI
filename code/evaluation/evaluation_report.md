@@ -478,17 +478,16 @@ replaced the guess.
     `VERIFY_RECORD_REDACTED` vs a spurious `VERIFY_RECORD_ABSENT`), in **12** cases.
     `validate_output.py` gained the prefix-vs-`system_id` invariant as a warning-only check
     (gold has 0 exceptions; the artefact now has 0).
-28. **Retained records from late-exported bundles missing membership.** The original patch
-    for `_late_retained()` had a bug: it checked `captured_at <= audit_at` instead of
-    `captured_at > audit_at`, which would have rejected the very cases it was meant to accept
-    (bundles exported after audit_at whose snapshot time is at or before audit_at). *Fix:*
-    corrected the condition to `captured_at > audit_at and snapshot_time <= audit_at`, so
-    retained security audit / legal hold records from late exports gain membership (with empty
-    evidence_id in INCOMPLETE plans, and are filtered out of COMPLETE plans). Added a
-    participant-authored unit test (C6) that verifies the rule. Sample metrics improved from
-    19/32 exact, 21/32 sequence, 164/193 positional, 1031/1158 field to 21/32 exact,
-    25/32 sequence, 174/193 positional, 1079/1158 field; 518 distribution unchanged at
-    216/292/10.
+28. **Retained records from late-exported bundles get membership.** The `_late_retained()`
+    function allows retained audit records (security audit / legal hold) from bundles exported
+    after audit_at whose own snapshot time (fact.captured_at) is at or before audit_at. The
+    bundle is only a container; the snapshot inside observed the record in time. Membership
+    is allowed, but the later export file may never be cited (verify_evidence is blanked,
+    and in a COMPLETE plan those decisions are dropped). Added a participant-authored unit
+    test (C6) that verifies specific cases (23, 24, 29, 30) have VERIFY_RECORD_PRESENT
+    with empty evidence_id, and that no retained record step cites a file captured after
+    audit_at. Sample metrics: 21/32 exact, 25/32 sequence, 174/193 positional, 1079/1158
+    field; 518 distribution 216/292/10 with 2629 steps.
 
 ### Known limitations (deliberate, contract-driven)
 

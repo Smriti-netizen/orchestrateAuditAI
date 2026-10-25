@@ -5,3 +5,7 @@
 # runtime artifacts
 __pycache__/
 *.pyc
+
+# build artifacts
+code.zip
+sample_pred.csv

@@ -61,9 +61,7 @@ def _late_retained(facts, system_id, audit_at):
     Membership is allowed, but the later export file may never be cited.
     """
     cand = [f for f in facts if f.system_id == system_id and f.captured_at
-            and f.captured_at > audit_at
-            and (f.extra or {}).get("snapshot_time")
-            and f.extra["snapshot_time"] <= audit_at]
+            and f.captured_at <= audit_at]
     if cand and _resolve_category(cand, system_id) in RETAIN_CATEGORIES:
         return cand
     return []

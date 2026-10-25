@@ -154,7 +154,7 @@ Key invariants (each replaced a measured guess):
   it regressed the 32 samples to **18/32** exact, **158/193** positional (it labels a
   retained anonymised/redacted row `VERIFY_RECORD_ABSENT`). The principled helper keeps the
   samples at **21/32** exact, **174/193** positional; on the full run both rules give the
-  same status counts (**216/292/10**, **2571** steps) and differ only in the operation/state
+  same status counts (**216/292/10**, **2629** steps) and differ only in the operation/state
   of the retained rows in **12** cases.
 * **Membership at `audit_at`.** A resource enters the plan only with an admissible fact or
   an in-window activity/provenance link. **158** `(case, resource)` pairs were tied only
