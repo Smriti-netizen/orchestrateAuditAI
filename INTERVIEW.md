@@ -18,11 +18,11 @@
 3. **Provenance attaches only ABSENT account facts** — guesses may prove absence, never a remaining-record finding; 0 status flips from wrong-account 404 reuse.
 4. **Analytics batch rule (structural k≥2 only)** — 2/2 sample pairs; 54/518 batch links; 132 ambiguous batches skipped.
 5. **`_record_exists` = PRESENT ∨ anonymized ∨ redacted** — rejected literal PRESENT-only (18/32 exact, 158/193 positional); same 518 status counts (216/292/10), 12 cases differ only in step content.
-6. **Post-`audit_at` membership leak fix** — 158 pairs removed; −22 steps; samples stay 21/32 exact, 174/193 positional.
+6. **Post-`audit_at` membership leak fix** — 158 pairs removed; −22 steps; samples stay 21/32 exact, 174/193 positional. The one exception: a retained audit/legal record (`SECURITY_AUDIT_LOG` / `LEGAL_HOLD_RECORD`) whose own snapshot time is before `audit_at` is a member even when its export file is later — member, never cited (`evidence_id ""`).
 7. **`_superseded()` guard** — 0 pairs on 518 (1113 late snapshots all after audit_at); kept for synthetic C4 fixture.
 8. **Replica drift = finding** — present in any topology counts as present; not collapsed away.
 9. **LLM only for 11 PNGs** — 33 cache-building calls, ≈$0.119 total; **0** calls on final `--no-llm` 518 run.
-10. **32-sample calibration gate** — 32/32 status, 19/32 exact, 21/32 sequence, 164/193 positional, 1031/1158 field before shipping full run.
+10. **32-sample calibration gate** — 32/32 status, 21/32 exact, 25/32 sequence, 174/193 positional, 1079/1158 field before shipping full run. Full 518 run: 216/292/10, 2629 steps.
 
 ## Six rejected ideas (with numbers)
 

@@ -75,7 +75,7 @@ The key is read from the environment at runtime, never printed, logged or cached
 | `python3 code/main.py --cases dataset/sample_deletion_requests.csv --out /tmp/pred.csv --no-llm` | calibration run on the 32 public cases |
 | `python3 code/main.py --out /tmp/pred.csv --eval` | score a file against `dataset/sample_output.csv` (status, exact, sequence, positional, field) |
 | `python3 code/evaluation/validate_output.py output.csv` | structural contract check (518 rows, numeric `case_id` order, JSON steps, `NOT_APPLICABLE` rule) |
-| `python3 code/evaluation/custom_cases.py` | participant-authored property tests (5 cases; expect 5/5) |
+| `python3 code/evaluation/custom_cases.py` | participant-authored property tests (6 cases; expect 6/6) |
 | `python3 code/main.py --m1` / `--m2` / `--link` | diagnostics: evidence parse, identity resolution, resource linking |
 | `python3 code/main.py --models` / `--choose` / `--test` | inspect the model catalogue, pick a model, ping it |
 
@@ -159,6 +159,10 @@ Key invariants (each replaced a measured guess):
 * **Membership at `audit_at`.** A resource enters the plan only with an admissible fact or
   an in-window activity/provenance link. **158** `(case, resource)` pairs were tied only
   by post-`audit_at` snapshots and were removed (**−22** steps, **0** status flips).
+  One exception: a retained audit/legal record (`SECURITY_AUDIT_LOG` / `LEGAL_HOLD_RECORD`)
+  whose own snapshot time is at/before `audit_at` is a member even when its export *file*
+  is later — the container is not the observation. It is reported without citing that file
+  (`evidence_id ""`), and in a `COMPLETE` plan the decision is dropped.
   **`_superseded()`** retires a stale `PRESENT` row when a fresher same-collection,
   same-topology snapshot exists at/before `audit_at` — **0** pairs on this dataset (all
   **1113** candidate supersede snapshots fall after every case's `audit_at`); kept for the
@@ -211,8 +215,8 @@ code/
   media_extractions/      cached screenshot extractions (shipped; no network at run time)
   cache/                  model catalogue and usage meter
   evaluation/
-    cases/                C4-C5 property tests (post-audit cut-off, retention + flow)
-    custom_cases.py       participant-authored property tests (run standalone; 5/5)
+    cases/                C4-C6 property tests (post-audit cut-off, retention + flow, late retained)
+    custom_cases.py       participant-authored property tests (run standalone; 6/6)
     validate_output.py    structural validator for root `output.csv`
     evaluation_report.md  metrics, custom cases, failures and fixes
     usage_report.md       providers, models, calls, tokens, cost

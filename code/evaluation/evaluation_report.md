@@ -58,12 +58,13 @@ order and evidence do not hide a missing or invented step:
 
 | | TP | FP | FN | precision | recall | F1 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| all steps | 176 | 5 | 17 | **0.972** | **0.912** | **0.941** |
+| all steps | 180 | 5 | 13 | **0.973** | **0.933** | **0.952** |
 
-The 5 false positives and 5 of the 17 false negatives are the same decision seen twice:
+The 5 false positives and 5 of the 13 false negatives are the same decision seen twice:
 an account row was resolved to the wrong half of an ambiguous batch (the reference's row
-counts as missed, ours as extra). The other 12 misses are 5 null-identifier analytics rows
-and 6 audit records that are not observable before `audit_at`.
+counts as missed, ours as extra). The other 8 misses are 5 null-identifier analytics rows,
+2 audit records that are not observable before `audit_at`, and 1 account row that was not
+linked at all.
 
 #### Field-level accuracy, positional
 
@@ -72,19 +73,19 @@ position *i* (denominator 193 gold steps):
 
 | Field | Matches | Accuracy |
 | --- | ---: | ---: |
-| `step_no` | 181 / 193 | 93.8 % |
-| `phase` | 181 / 193 | 93.8 % |
-| `system_id` | 169 / 193 | 87.6 % |
-| `resource_id` | 164 / 193 | 85.0 % |
-| `operation` | 169 / 193 | 87.6 % |
-| `state` | 169 / 193 | 87.6 % |
-| `evidence_id` | 179 / 193 | 92.7 % |
-| **all six fields** | **164 / 193** | **85.0 %** |
+| `step_no` | 185 / 193 | 95.9 % |
+| `phase` | 185 / 193 | 95.9 % |
+| `system_id` | 179 / 193 | 92.7 % |
+| `resource_id` | 174 / 193 | 90.2 % |
+| `operation` | 179 / 193 | 92.7 % |
+| `state` | 179 / 193 | 92.7 % |
+| `evidence_id` | 183 / 193 | 94.8 % |
+| **all six fields** | **174 / 193** | **90.2 %** |
 
 `resource_id` is the only field with an error of its own: every operation, phase and state
 mismatch is a knock-on effect of a verification step for the wrong (or an omitted) record.
-On the 164 positional steps whose `(operation, system_id, resource_id)` also matches,
-`evidence_id` matches **164 / 164**, and the 2 remaining evidence differences are the two
+On the 174 positional steps whose `(operation, system_id, resource_id)` also matches,
+`evidence_id` matches **174 / 174**, and the 2 remaining evidence differences are the two
 wrong-id account steps (`case_28`, `case_31`) where the cited snapshot proves absence of
 *our* record.
 
@@ -95,8 +96,8 @@ a dropped step but not a reordering:
 
 | | Value |
 | --- | --- |
-| Mean LCS ratio per case (LCS ÷ reference length) | **0.913** |
-| Pooled LCS ratio (Σ LCS ÷ Σ reference steps) | **0.938** (181 / 193) |
+| Mean LCS ratio per case (LCS ÷ reference length) | **0.926** |
+| Pooled LCS ratio (Σ LCS ÷ Σ reference steps) | **0.959** (185 / 193) |
 
 The pooled figure equals the predicted step count, i.e. for every case the predicted
 operations are a subsequence of the reference operations — no reordering, no invented
@@ -104,7 +105,7 @@ operation.
 
 ### Where the remaining step error comes from
 
-The report predicts 181 steps against 193 reference steps: **17 reference steps are
+The report predicts 185 steps against 193 reference steps: **13 reference steps are
 missing and 5 predicted account steps are the wrong id**. Findings and remediation are
 complete (41/41 each); every remaining difference is a verification step whose resource id
 could not be resolved deterministically.
@@ -113,7 +114,7 @@ could not be resolved deterministically.
 | --- | --- | --- | --- |
 | Account row identifier-less; two or more claim-compatible rows in the batch | `case_18/23/28/29/31` | 6 missing + 5 wrong id | ranked pick at confidence 1/k (below) — expected value is positive, a wrong id costs nothing extra over omitting |
 | Anonymised `analytics_*` rows with **all** identifier columns null | `case_03 analytics_9406`, `case_25 analytics_1895` | 5 missing | only structurally forced batch pairs are linked (below) |
-| Reference audit record only in a snapshot captured **after** `audit_at`, or in no file | `case_23 audit_record_4128`, `case_18 audit_record_6645` | 6 missing | inadmissible / unattainable → omitted |
+| Reference audit record only in a snapshot captured **after** `audit_at`, or in no file | `case_18 audit_record_6645`, `case_20 audit_record_5569` | 2 missing | inadmissible / unattainable → omitted |
 | Absence proof snapshot choice | `case_21/25 account_6440/3136` | **0** (was 2 evidence ids) | fixed: a provenance-resolved account now carries its own admissible 404 fact, so the cited proof is the reference's (see §5, entry 24) |
 | Wrong operation, wrong state, wrong order, extra phase | — | **0** | — |
 
@@ -178,20 +179,25 @@ resource from admissible facts and emits the exact reference step
 | `analytics_9406` | case_03 | `evidence_94` | before | `lookup_key=null`, all ident fields null |
 | `analytics_901` | case_04 | `evidence_56` | before | all ident fields null |
 | `analytics_5335/1895/4566/4574/6077` | case_21/25/26/27/28 | `evidence_92` (before), `evidence_02` (after) | — | all ident fields null |
-| `audit_record_4128/7095/3954/1707` | case_23/24/29/30 | `evidence_02` only | **after** `audit_at` | `subject_reference` present but inadmissible |
+| `audit_record_4128/7095/3954/1707` | case_23/24/29/30 | `evidence_02` only | file **after** `audit_at`; row's own time before | recovered by the late-retained rule (`VERIFY_RECORD_PRESENT`, `evidence_id ""`) |
 | `audit_record_6645/5569` | case_18/20 | none | — | no fact at all |
 
 Audit records were tested for a "one record per deletion case" rule: exactly 24 of the 32
-samples have one audit-record step and 8 have none, so the rule is false; the 6 unresolved
-ids appear only in `evidence_02` (inadmissible) or nowhere, so nothing can be recovered
-without guessing. Retention was also checked before emitting retained-record
-verifications: of 369 case–audit_record pairs, **0** have `retention_until` earlier than
-the case's `audit_at`, so `VERIFY_RECORD_PRESENT` never contradicts the retention ledger.
+samples have one audit-record step and 8 have none, so the rule is false; the 2 still
+unresolved ids (`case_18/20`) appear in no file at all, so nothing can be recovered
+without guessing. The four ids that appear only in the post-cut-off `evidence_02` are
+members via the late-retained rule (the snapshot inside the bundle is in time even though
+the export container is not), so they are now predicted without citing that file.
+Retention was also checked before emitting retained-record verifications: of 369
+case–audit_record pairs, **0** have `retention_until` earlier than the case's `audit_at`, so
+`VERIFY_RECORD_PRESENT` never contradicts the retention ledger.
 
 `evidence_02` is the deliberate trap: it is captured 2026-09-17T12:00, two days after the
-`audit_at` of exactly the four cases whose audit records it contains. A `subject_reference`
-mapping for that file is not used for them because the file is inadmissible; `case_18/20`
-audits fall after the capture, but their audit records are simply not in the snapshot.
+`audit_at` of exactly the four cases whose audit records it contains. The file still may
+not be **cited** for them, but its rows are the record's own observation and carry a
+snapshot time before `audit_at`, so they establish membership only (the late-retained
+rule); `case_18/20` audits fall after the capture, but their audit records are simply not
+in the snapshot.
 `evidence_92`'s analytics rows that *do* carry an email (`analytics_3697`, `analytics_5208`)
 are linked and predicted correctly, which isolates the failure to the null-identifier rows.
 
@@ -201,14 +207,14 @@ are linked and predicted correctly, which isolates the failure to the null-ident
 | --- | ---: | ---: | ---: | ---: |
 | FINDING | 41 | 41 | 41 / 41 | 0 |
 | REMEDIATION | 41 | 41 | 41 / 41 | 0 |
-| VERIFICATION | 111 | 99 | 97 / 99 | 2 |
+| VERIFICATION | 111 | 103 | 101 / 103 | 2 |
 
 The two differences are not evidence-choice errors: they are the two wrong-id account
 steps (`case_28`, `case_31`). The step at that position cites the snapshot that proves
 absence of the account *we* resolved, while the reference's step proves absence of a
 different account from the same ambiguous batch, so the two positions hold different
 records and therefore different (both valid) proofs. Every step whose record also matches
-cites exactly the reference `file_id` (**164 / 164**).
+cites exactly the reference `file_id` (**174 / 174**).
 
 #### Ordering and extra steps
 
@@ -223,20 +229,22 @@ verifications by the contract's operation order, which matches the reference on 
 ## 3. Participant-authored evaluation cases
 
 Implemented as property tests in `code/evaluation/custom_cases.py` (C1–C3) and
-`code/evaluation/cases/` (C4–C5) so they do not depend on the sample answers. Current
-result: **5 / 5 pass**.
+`code/evaluation/cases/` (C4–C6) so they do not depend on the sample answers. Current
+result: **6 / 6 pass**.
 
 | Case | What it asserts | Why it matters | Observed |
 | --- | --- | --- | --- |
-| **C1 — authorization gate** | The same subject that produces real deletion steps (`leila.haddad@yahoo.com` → 1 step) must produce `NOT_APPLICABLE` / `[]` when the text is "send me a copy … do not change anything". | The gate must be driven by `request_text`, not by the presence of data. A bug here silently destroys true positives. | `NOT_APPLICABLE`, 0 steps, control produced 1 step ✓ |
-| **C2 — historical-email resolution** | A request sent from a superseded address (`o.walker6695@yahoo.com`) must resolve to the same subject and produce byte-identical steps as the current address. | Identity is reconstructed from the current snapshot **plus** the audit log; old identifiers still appear in older systems. | both → `user_523`, both `INCOMPLETE`, 4 vs 4 identical steps ✓ |
+| **C1 — authorization gate** | The same subject that produces real deletion steps (`areed1433@gmail.com` → 1 step) must produce `NOT_APPLICABLE` / `[]` when the text is "send me a copy … do not change anything". | The gate must be driven by `request_text`, not by the presence of data. A bug here silently destroys true positives. | `NOT_APPLICABLE`, 0 steps, control produced 1 step ✓ |
+| **C2 — historical-email resolution** | A request sent from a superseded address (`o.walker6695@yahoo.com`) must resolve to the same subject and produce byte-identical steps as the current address. | Identity is reconstructed from the current snapshot **plus** the audit log; old identifiers still appear in older systems. | both → `user_523`, both `INCOMPLETE`, 3 vs 3 identical steps ✓ |
 | **C3 — multilingual deletion request** | A Portuguese "excluir a minha conta … apaguem tudo" must be an authorized deletion. | Requests arrive in several languages; an English-only classifier would mark them `NOT_APPLICABLE`. | authorized ✓, `COMPLETE`, 1 step ✓ |
 | **C4 — post-`audit_at` evidence** (`cases/post_audit_snapshot.py`) | On 60 real requests that carry linked facts captured after their cut-off: (a) a step may only cite a file that supports it at the cut-off - an admissible fact in that file, or a covering snapshot captured at/before `audit_at`; (b) no step may report a resource that is only discoverable from post-cut-off evidence or a post-cut-off activity link; (c) the status must be unchanged when the index is rebuilt from cut-off facts only. | This is the contract's hardest boundary. A future snapshot could otherwise leak the verdict, and a status computed from it would be untraceable at the audit time the case is judged at. | 60 cases replayed: late citations 0, future-only steps 0, status changes 0 ✓ (the step *set* differs for exactly one case, `case_231`, whose account id is learned from a post-cut-off log line even though the 404 fact it cites is admissible - see §5, entry 26). The same citation test over **all 518** rows reports 0 inadmissible citations. |
 | **C5 — retained record + data-flow recreation** (`cases/retained_and_flow.py`) | (a) a policy-retained `audit_record_*` must produce exactly `VERIFY_RECORD_PRESENT`, never `DELETE_RECORD` / `REPORT_REMAINING_RECORD`; (b) an enabled `data_flow_*` must produce the finding + remediation + verification triple, and the *same* subject replayed with the flag flipped to `False` must keep only the verification step. | Policy retention must not be "cleaned up" as leftover data, and flow state must come from evidence rather than from a workflow result. | `audit_record_3753` (case_34): `[VERIFY_RECORD_PRESENT]`; `data_flow_2528` (case_37): enabled `[REPORT_ACTIVE_DATA_FLOW, DISABLE_DATA_FLOW, VERIFY_DATA_FLOW_DISABLED]`, flipped `[VERIFY_DATA_FLOW_DISABLED]` ✓ |
+| **C6 — late retained membership** (`cases/late_retained.py`) | Retained records (`security_service` / `legal_service`, categories `SECURITY_AUDIT_LOG` / `LEGAL_HOLD_RECORD`) taken from a bundle exported **after** `audit_at` are members when the snapshot inside it was taken at/before `audit_at`, and must never cite that later file. Four real cases plus two synthetic fixtures pin the rule: fact `captured_at ≤ audit_at` with `file_captured_at > audit_at` is admitted; fact `captured_at > audit_at` stays excluded. | A retained row in a late-exported bundle is real membership evidence, but the export container is not evidence - citing it would put a post-`audit_at` file in a pre-`audit_at` plan. | cases 23/24/29/30 carry `security_service VERIFY_RECORD_PRESENT` with `evidence_id ""`; 0 steps cite a file captured after that case's `audit_at`; both synthetic fixtures behave as required ✓ |
 
-C4 and C5 each build their own context from `dataset/` and never read `sample_output.csv`;
-C5 clones the fact list in memory to flip one flag, so it tests the decision path rather
-than a recorded answer.
+C4, C5 and C6 each build their own context from `dataset/` and never read
+`sample_output.csv`; C5 clones the fact list in memory to flip one flag, so it tests the
+decision path rather than a recorded answer. C6 adds two standalone synthetic `Fact`
+fixtures so the rule itself is pinned even if the dataset changes.
 
 ---
 
@@ -248,7 +256,7 @@ than a recorded answer.
 | `COMPLETE` | 216 |
 | `INCOMPLETE` | 292 |
 | `NOT_APPLICABLE` | 10 (all with `steps_json = []`) |
-| Total steps | 2571 (avg 4.96 per case) |
+| Total steps | 2629 (avg 5.08 per case) |
 | Unresolved subjects | 0 |
 | Provenance-linked account rows | 342 (each a distinct account, 0 reused; 176 cases omitted) |
 | Batch-linked analytics rows | 54 (132 batches reported ambiguous) |
@@ -257,7 +265,7 @@ than a recorded answer.
 Operation totals across the run: `REPORT_REMAINING_RECORD` 314, `REPORT_EXPOSED_PII` 162,
 `REPORT_ACTIVE_DATA_FLOW` 69, `REPORT_RESTORE_RISK` 11, `DELETE_RECORD` 314,
 `REDACT_RECORD` 99, `ANONYMIZE_RECORD` 63, `DISABLE_DATA_FLOW` 69, `BLOCK_RESTORE` 11,
-`VERIFY_RECORD_ABSENT` 754, `VERIFY_RECORD_PRESENT` 294, `VERIFY_RECORD_REDACTED` 154,
+`VERIFY_RECORD_ABSENT` 754, `VERIFY_RECORD_PRESENT` 352, `VERIFY_RECORD_REDACTED` 154,
 `VERIFY_RECORD_ANONYMIZED` 103, `VERIFY_DATA_FLOW_DISABLED` 104,
 `VERIFY_RESTORE_BLOCKED` 50. Every remediation operation has a matching verification
 operation with at least the same count, which is the internal consistency invariant the
@@ -265,7 +273,7 @@ planner guarantees.
 
 The artefact is reproducible from the shipped archive: `code.zip` unpacked into an empty
 directory, `dataset/` copied in beside it, and a `--no-llm` run produces a byte-identical
-`output.csv` (sha256 `75a34bd0…`).
+`output.csv` (sha256 `47735f38…`).
 
 ---
 

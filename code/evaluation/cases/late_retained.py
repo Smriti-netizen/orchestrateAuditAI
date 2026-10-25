@@ -9,6 +9,9 @@ This test checks:
 1. Specific cases (23, 24, 29, 30) have VERIFY_RECORD_PRESENT for their audit_record
    with evidence_id "" in INCOMPLETE plans.
 2. VERIFY_RECORD_PRESENT for retained records never cites a file captured after audit_at.
+3. Two synthetic fixtures pin the rule itself: a retained fact whose own snapshot time is
+   at or before audit_at but whose export file is later is admitted, while a fact whose own
+   snapshot time is after audit_at stays excluded.
 """
 import sys
 from pathlib import Path
@@ -17,7 +20,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _common import context, run  # noqa: E402
 
+from audit.engine import _late_retained  # noqa: E402
 from audit.evidence import load_manifest  # noqa: E402
+from audit.evidence.facts import Fact  # noqa: E402
 
 
 def _steps_for(steps, system_id, resource_id):
@@ -25,7 +30,38 @@ def _steps_for(steps, system_id, resource_id):
             if s["system_id"] == system_id and s["resource_id"] == resource_id]
 
 
+def _synthetic():
+    """Pin the rule's two halves without touching the dataset."""
+    audit_at = "2026-06-01T00:00:00Z"
+    # (a) the bundle was exported after audit_at, but the snapshot inside it was taken
+    #     before: the record was observed in time, so it is a member.
+    in_time = Fact(file_id="synthetic_late_bundle", captured_at="2026-05-20T10:00:00Z",
+                   system_id="security_service", resource_id="audit_record_9001",
+                   category="SECURITY_AUDIT_LOG", presence="PRESENT",
+                   extra={"file_captured_at": "2026-07-01T00:00:00Z"})
+    # (b) the snapshot itself was taken after audit_at: the future is not evidence.
+    future = Fact(file_id="synthetic_future", captured_at="2026-06-15T10:00:00Z",
+                  system_id="security_service", resource_id="audit_record_9002",
+                  category="SECURITY_AUDIT_LOG", presence="PRESENT",
+                  extra={"file_captured_at": "2026-07-01T00:00:00Z"})
+
+    admitted = _late_retained([in_time], "security_service", audit_at)
+    excluded = _late_retained([future], "security_service", audit_at)
+    if admitted != [in_time]:
+        return False, (f"synthetic in-time snapshot in a late bundle was not admitted "
+                       f"(captured_at<=audit_at, file_captured_at>audit_at): {admitted}")
+    if excluded != []:
+        return False, (f"synthetic snapshot taken after audit_at was admitted: {excluded}")
+    return True, ("synthetic fixtures: late bundle / in-time snapshot admitted; "
+                  "post-cut-off snapshot excluded")
+
+
 def check():
+    ok, detail = _synthetic()
+    if not ok:
+        return False, detail
+    notes = [detail]
+
     ctx = context()
     manifest = {ef.file_id: ef.captured_at for ef in load_manifest()}
 
@@ -74,4 +110,4 @@ def check():
                         return False, (f"{req.case_id} {s['system_id']} VERIFY_RECORD_PRESENT "
                                      f"cites {ev} captured at {manifest[ev]} > audit_at {req.audit_at}")
 
-    return True, "late_retained rule: all checks passed"
+    return True, "; ".join(notes + ["late_retained rule: all checks passed"])
