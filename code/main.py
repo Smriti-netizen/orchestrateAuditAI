@@ -334,7 +334,8 @@ def run_generate(cases_path=None, out_path=None):
     rows.sort(key=lambda r: _case_key(r["case_id"]))
     target = out_path or config.OUTPUT_PATH
     with open(target, "w", encoding="utf-8", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=["case_id", "deletion_status", "steps_json"])
+        writer = csv.DictWriter(fh, fieldnames=["case_id", "deletion_status", "steps_json"],
+                                lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
 

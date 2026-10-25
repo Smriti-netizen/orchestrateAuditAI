@@ -53,6 +53,22 @@ def _at_or_before(fact, audit_at):
     return bool(file_time) and file_time <= audit_at
 
 
+def _late_retained(facts, system_id, audit_at):
+    """Retained records (security audit / legal hold) taken from a bundle exported
+    after audit_at whose OWN snapshot time is at or before audit_at.
+
+    The bundle is only a container; the snapshot inside observed the record in time.
+    Membership is allowed, but the later export file may never be cited.
+    """
+    cand = [f for f in facts if f.system_id == system_id and f.captured_at
+            and f.captured_at > audit_at
+            and (f.extra or {}).get("snapshot_time")
+            and f.extra["snapshot_time"] <= audit_at]
+    if cand and _resolve_category(cand, system_id) in RETAIN_CATEGORIES:
+        return cand
+    return []
+
+
 def _latest(facts):
     """Newest admissible fact, preferring an authoritative snapshot over a log line.
 
@@ -83,6 +99,7 @@ class Decision:
     verify_state: str = ""
     finding_evidence: str = ""
     verify_evidence: str = ""
+    late_membership: bool = False
 
     @property
     def is_violation(self):
@@ -316,11 +333,16 @@ def analyze_case(req, resolver, linker, coverage, absence_fn,
         if {"activity", "activity_provenance"} & item.link_sources:
             if item.link_times and not any(t <= req.audit_at for t in item.link_times):
                 continue
-        elif item.facts and not any(_at_or_before(f, req.audit_at) for f in item.facts):
+        elif item.facts and not any(_at_or_before(f, req.audit_at) for f in item.facts) \
+                and not _late_retained(item.facts, system_id, req.audit_at):
             continue
         # Only facts that belong to this system's copy are state evidence for it.
         admissible = [f for f in item.facts
                       if f.system_id == system_id and _at_or_before(f, req.audit_at)]
+        late_only = False
+        if not admissible:
+            admissible = _late_retained(item.facts, system_id, req.audit_at)
+            late_only = bool(admissible)
         # An absence observation (lookup that returned nothing) made before the
         # deletion request says nothing about the post-request state, so it can
         # neither prove nor establish ownership of the resource.
@@ -350,9 +372,17 @@ def analyze_case(req, resolver, linker, coverage, absence_fn,
         if decision.verification == "VERIFY_RECORD_ABSENT" and not decision.verify_evidence:
             decision.verify_evidence = absence_fn(
                 system_id, resource_id, req.audit_at) or ""
+        if late_only and decision is not None:
+            decision.verify_evidence = ""
+            decision.late_membership = True
         decisions.append(decision)
 
     status = "INCOMPLETE" if any(d.is_violation for d in decisions) else "COMPLETE"
+    if status == "COMPLETE":
+        # A COMPLETE answer may only cite evidence captured at or before audit_at.
+        # A retained record seen only in a later-exported bundle cannot be cited,
+        # so it is left out of a COMPLETE plan (INCOMPLETE plans use "" anyway).
+        decisions = [d for d in decisions if not d.late_membership]
     return status, build_steps(decisions, status)
 
 

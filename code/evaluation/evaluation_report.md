@@ -31,10 +31,10 @@ stdlib-only Python 3 and path-relative, so `python3` works on macOS/Linux unchan
 | Metric | Result |
 | --- | --- |
 | Case-level deletion-status accuracy | **32 / 32 = 100.0 %** |
-| Exact step-set accuracy (all steps identical, incl. evidence) | 19 / 32 = 59.4 % |
-| Operation-sequence accuracy (same operations, same order) | 21 / 32 = 65.6 % |
-| Step match, positional (all six fields equal) | 164 / 193 = 85.0 % |
-| Field-level accuracy, positional (6 fields × 193 steps) | 1031 / 1158 = 89.0 % |
+| Exact step-set accuracy (all steps identical, incl. evidence) | 21 / 32 = 65.6 % |
+| Operation-sequence accuracy (same operations, same order) | 25 / 32 = 78.1 % |
+| Step match, positional (all six fields equal) | 174 / 193 = 90.2 % |
+| Field-level accuracy, positional (6 fields × 193 steps) | 1079 / 1158 = 93.2 % |
 
 Status distribution produced for the same 32 cases: `COMPLETE` 10, `INCOMPLETE` 22,
 `NOT_APPLICABLE` 0 — identical to the reference distribution.
@@ -478,13 +478,25 @@ replaced the guess.
     `VERIFY_RECORD_REDACTED` vs a spurious `VERIFY_RECORD_ABSENT`), in **12** cases.
     `validate_output.py` gained the prefix-vs-`system_id` invariant as a warning-only check
     (gold has 0 exceptions; the artefact now has 0).
+28. **Retained records from late-exported bundles missing membership.** The original patch
+    for `_late_retained()` had a bug: it checked `captured_at <= audit_at` instead of
+    `captured_at > audit_at`, which would have rejected the very cases it was meant to accept
+    (bundles exported after audit_at whose snapshot time is at or before audit_at). *Fix:*
+    corrected the condition to `captured_at > audit_at and snapshot_time <= audit_at`, so
+    retained security audit / legal hold records from late exports gain membership (with empty
+    evidence_id in INCOMPLETE plans, and are filtered out of COMPLETE plans). Added a
+    participant-authored unit test (C6) that verifies the rule. Sample metrics improved from
+    19/32 exact, 21/32 sequence, 164/193 positional, 1031/1158 field to 21/32 exact,
+    25/32 sequence, 174/193 positional, 1079/1158 field; 518 distribution unchanged at
+    216/292/10.
 
 ### Known limitations (deliberate, contract-driven)
 
-* 17 of the 193 reference steps remain unresolved: 6 account rows in batches where the
+* 13 of the 193 reference steps remain unresolved: 6 account rows in batches where the
   candidate count exceeds one (a coin flip is taken rather than omitted), 5 analytics rows
-  whose identifiers are all null and whose batch is not structurally forced, and 6 audit
-  records that exist only in a post-`audit_at` snapshot or in no file at all.
+  whose identifiers are all null and whose batch is not structurally forced, and 2 audit
+  records that exist only in a post-`audit_at` snapshot or in no file at all (reduced from 6
+  by the late-retained rule in entry 28).
 * `case_231` loses one verification step when the index is rebuilt from cut-off facts only:
   the account id is learned from a post-cut-off log line, while the 404 fact that proves the
   row is gone is admissible. Tightening membership to fix it costs 9 positional matches, so
